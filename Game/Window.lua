@@ -13,6 +13,13 @@ local ROW_HEIGHT, VISIBLE_ROWS = 24, 14
 local WIDTH, HEIGHT = 860, 470
 local LEFT_WIDTH = 210
 
+-- Column x positions and widths inside a result row (row width 610). Rows
+-- and headers both use this, so they always line up.
+local COL = {
+  activity = { 4, 132 }, leader = { 140, 104 }, members = { 248, 124 }, count = { 338, 34 },
+  open = { 376, 62 }, age = { 442, 44 }, whisper = { 492, 58 }, join = { 554, 54 },
+}
+
 local frame
 local tabs, activityChecks, roleButtons, rowFrames, headers = {}, {}, {}, {}, {}
 local state = { offset = 0, sortBy = "fit", rows = {}, shown = {} }
@@ -170,29 +177,29 @@ local function buildRow(parent, i)
     fs:SetWordWrap(false)
     return fs
   end
-  row.activity = text(4, 140)
-  row.leader = text(148, 110)
-  row.tag = text(148, 110, "GameFontGreenSmall")
+  row.activity = text(COL.activity[1], COL.activity[2])
+  row.leader = text(COL.leader[1], COL.leader[2])
+  row.tag = text(COL.leader[1], COL.leader[2], "GameFontGreenSmall")
   row.tag:ClearAllPoints()
-  row.tag:SetPoint("LEFT", row, "LEFT", 148, -8)
+  row.tag:SetPoint("LEFT", row, "LEFT", COL.leader[1], -6)
   row.leader:ClearAllPoints()
-  row.leader:SetPoint("LEFT", row, "LEFT", 148, 3)
+  row.leader:SetPoint("LEFT", row, "LEFT", COL.leader[1], 4)
   row.classes = {}
   for k = 1, 5 do
     local icon = row:CreateTexture(nil, "ARTWORK")
     icon:SetSize(16, 16)
-    icon:SetPoint("LEFT", row, "LEFT", 262 + (k - 1) * 17, 0)
+    icon:SetPoint("LEFT", row, "LEFT", COL.members[1] + (k - 1) * 17, 0)
     row.classes[k] = icon
   end
-  row.count = text(350, 34)
-  row.open = text(388, 70)
-  row.age = text(460, 44)
+  row.count = text(COL.count[1], COL.count[2])
+  row.open = text(COL.open[1], COL.open[2])
+  row.age = text(COL.age[1], COL.age[2])
 
-  row.whisper = button(row, L.WHISPER, 66, 20)
-  row.whisper:SetPoint("RIGHT", row, "RIGHT", -72, 0)
+  row.whisper = button(row, L.WHISPER, COL.whisper[2], 20)
+  row.whisper:SetPoint("LEFT", row, "LEFT", COL.whisper[1], 0)
   row.whisper:SetScript("OnClick", function() Search.Whisper(row.data and row.data.leader) end)
-  row.join = button(row, L.JOIN, 66, 20)
-  row.join:SetPoint("RIGHT", row, "RIGHT", -2, 0)
+  row.join = button(row, L.JOIN, COL.join[2], 20)
+  row.join:SetPoint("LEFT", row, "LEFT", COL.join[1], 0)
   row.join:SetScript("OnClick", function()
     if row.data then
       Search.Apply(row.data.id, ns.CurrentWant())
@@ -398,16 +405,18 @@ local function build()
     updateRows()
   end)
   for _, col in ipairs({
-    { "activity", L.COL_ACTIVITY, 4 }, { "leader", L.COL_LEADER, 148 }, { "members", L.COL_MEMBERS, 262 },
-    { "fit", L.COL_OPEN, 388 }, { "age", L.COL_AGE, 460 },
+    { "activity", L.COL_ACTIVITY, COL.activity }, { "leader", L.COL_LEADER, COL.leader },
+    { "members", L.COL_MEMBERS, COL.members }, { "fit", L.COL_OPEN, COL.open }, { "age", L.COL_AGE, COL.age },
   }) do
     local h = CreateFrame("Button", nil, frame)
-    h:SetSize(100, 18)
-    h:SetPoint("BOTTOMLEFT", list, "TOPLEFT", col[3], 4)
-    h:SetNormalFontObject("GameFontNormalSmall")
-    h:SetText(col[2])
-    local fs = h.GetFontString and h:GetFontString()
-    if type(fs) == "table" then fs:SetJustifyH("LEFT") end
+    h:SetSize(col[3][2], 18)
+    h:SetPoint("BOTTOMLEFT", list, "TOPLEFT", col[3][1], 4)
+    -- Own left-aligned label: a button's text is centred.
+    local label = h:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+    label:SetPoint("LEFT", h, "LEFT", 0, 0)
+    label:SetText(col[2])
+    h.label = label
+    h:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
     h:SetScript("OnClick", function()
       state.sortBy = col[1]
       refilter()

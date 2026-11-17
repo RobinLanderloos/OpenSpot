@@ -298,7 +298,12 @@ check("Join applies with the ticked roles", applied[2] and applied[2][1] == true
 check("the row shows Applied", rowFor(2).join.text == "Applied", rowFor(2).join.text)
 
 -- Sorting by column.
-click(buttonText("Leader"))
+local leaderHeader = find(function(w)
+  local label = rawget(w, "label")
+  return type(label) == "table" and rawget(label, "text") == "Leader" and w.scripts.OnClick
+end)
+check("column headers are clickable", leaderHeader ~= nil)
+click(leaderHeader)
 check("leader column sorts", rowFor(1) ~= nil)
 
 -- Blizzard's window on request.

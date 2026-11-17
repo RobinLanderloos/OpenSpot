@@ -1,3 +1,6 @@
+---
+status: superseded by ADR-0005
+---
 # Filter inside Blizzard's Browse tab, not our own window
 
 OpenSpot adds its controls to Forever's own Looking For Group window (`LFGBrowseFrame`) and hides listings there, instead of building a separate group browser. Searching (`C_LFGList.Search`) needs a real click, and applying/inviting are protected calls; leaving those to Blizzard's window avoids taint and a full rebuild of search, activity picking and apply buttons. The cost is less control over layout and columns. All fit logic lives in `Core/` with no game calls, so moving to an own window later (option B in the design session) would only replace the `Game/` side.

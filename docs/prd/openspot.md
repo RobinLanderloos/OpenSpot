@@ -75,3 +75,35 @@ OpenSpot adds Tank / Healer / DPS toggles to the Browse tab. I tick the open spo
 
 - On retail, `GetSearchResultMemberCounts` also returns `TANK_REMAINING` etc. If Forever fills those, they could replace the template for dungeons; the debug report records them.
 - Searches need a real click, so the addon never searches on its own.
+
+---
+
+# v0.2: our own search window (ADR 0005)
+
+## Problem
+
+Blizzard's Browse rows can't be changed reliably from an addon: the message button never showed and whispered rows looked the same.
+
+## Solution and user stories
+
+29. As a player, I want the Looking For Group key/button to open OpenSpot's window, so that I don't use Blizzard's browser any more.
+30. As a player, I want a "Blizzard window" button, so that I can still list my own group or use anything OpenSpot doesn't cover.
+31. As a player, I want category tabs (from the client's categories) and a checklist of activities, so that I can search several dungeons at once.
+32. As a player, I want activities limited to my level by default (when the client gives level ranges), so that the list stays short.
+33. As a player, I want my ticked activities remembered per character.
+34. As a player, I want a Search button that shows when it can be pressed again, because searching needs a click and has a cooldown.
+35. As a player, I want each row to show activity, leader, member class icons, open spots per role, and age.
+36. As a player, I want rows sorted best fit first (most members with a spot for me), and sortable by clicking a column header.
+37. As a player, I want a Whisper button per row that opens a whisper to the leader.
+38. As a player, I want leaders I whispered (any way) in the last hour tagged "Whispered 3m" and dimmed, remembered per character.
+39. As a player, I want a Request to join button if Forever allows it from an addon.
+40. As a player, I want a row tooltip listing every member's name, class and role (if the client exposes it).
+41. As a player, I want the role buttons, party counts and "Showing X of Y" line from v1 in the new window.
+42. As a player, I want the window movable, closable with Escape, and its position remembered.
+
+## Implementation decisions
+
+- Core (pure, tested): Fit (unchanged), Selection (unchanged), Summary (unchanged), Whispers (name -> time, 1-hour expiry; restored from git history), Rows (listing -> row model: open spots, sort key, age text), Sort (best-fit order and column sorts), Activities (filter by level, remember ticks).
+- Game: Window (frame, tabs, checklist, result rows we draw), Search (C_LFGList.Search + LFG_LIST_SEARCH_RESULTS_RECEIVED/UPDATED), Toggle (redirect the Looking For Group toggle), Probe (`/openspot debug` additions to verify the client).
+- The v1 Browse-tab hook is removed once the window works.
+- Not published until everything works in game (user's decision, 2026-11-17).

@@ -141,6 +141,7 @@ _G.C_LFGList = {
 
 -- Group state the tests change.
 local group = { size = 1, roles = {} }
+_G.UnitLevel = function() return 20 end
 _G.IsInGroup = function() return group.size > 1 end
 _G.IsInRaid = function() return false end
 _G.GetNumGroupMembers = function() return group.size > 1 and group.size or 0 end
@@ -247,6 +248,8 @@ local ok, out = slash("OPENSPOT", "debug")
 check("/openspot debug runs", ok, out)
 check("debug report stored", type(OpenSpotDB.report) == "table" and #OpenSpotDB.report > 5,
   OpenSpotDB.report and table.concat(OpenSpotDB.report, "\n"))
+ok, out = slash("OPENSPOT", "probe")
+check("/openspot probe runs", ok and OpenSpotDB.report and OpenSpotDB.report[2] and OpenSpotDB.report[2]:find("player level 20", 1, true), OpenSpotDB.report and table.concat(OpenSpotDB.report or {}, "\n"))
 ok, out = slash("OPENSPOT", "")
 check("/openspot opens settings", ok, out)
 

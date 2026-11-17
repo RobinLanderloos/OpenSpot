@@ -68,10 +68,103 @@ local function debugReport()
   print("|cff40c0ffOpenSpot:|r " .. L.DEBUG_DONE)
 end
 
+-- /openspot probe: client facts for our own search window (issue 007).
+-- Everything goes into the report only (Report.Add), not into chat.
+local function call(fn, ...)
+  if type(fn) ~= "function" then return "missing" end
+  local result = { pcall(fn, ...) }
+  if not result[1] then return "error: " .. tostring(result[2]) end
+  local out = {}
+  for i = 2, #result do
+    local v = result[i]
+    out[#out + 1] = type(v) == "table" and ("{" .. keys(v) .. "}") or tostring(v)
+  end
+  return table.concat(out, " ; ")
+end
+
+local function probeReport()
+  Report.Start()
+  local C = C_LFGList
+  Report.Add("player level " .. tostring(UnitLevel("player")))
+
+  local fns = {}
+  for k, v in pairs(C) do fns[#fns + 1] = k .. (type(v) == "function" and "" or ("=" .. type(v))) end
+  table.sort(fns)
+  Report.Add("C_LFGList: " .. table.concat(fns, ","))
+
+  Report.Add("GetAvailableCategories(): " .. call(C.GetAvailableCategories))
+  local ok, categories = pcall(C.GetAvailableCategories)
+  if ok and type(categories) == "table" then
+    for _, cat in ipairs(categories) do
+      Report.Add("category " .. cat .. ": " .. call(C.GetLfgCategoryInfo, cat))
+      local okA, activities = pcall(C.GetAvailableActivities, cat)
+      if okA and type(activities) == "table" then
+        Report.Add("  " .. #activities .. " activities")
+        for i, id in ipairs(activities) do
+          if i > 80 then break end
+          Report.Add("  activity " .. id .. ": " .. call(C.GetActivityInfoTable, id))
+        end
+      end
+    end
+  end
+
+  -- Per-member info and join calls on one current result with members.
+  local okR, _, results = pcall(C.GetFilteredSearchResults)
+  local picked
+  if okR and type(results) == "table" then
+    for _, id in ipairs(results) do
+      local info = C.GetSearchResultInfo(id)
+      if info and (info.numMembers or 0) > 1 then picked = id; break end
+    end
+    picked = picked or results[1]
+  end
+  if picked then
+    Report.Add("result " .. picked .. " info: " .. call(C.GetSearchResultInfo, picked))
+    for i = 1, 5 do
+      Report.Add(("  member %d PlayerInfo: %s"):format(i, call(C.GetSearchResultPlayerInfo, picked, i)))
+      Report.Add(("  member %d MemberInfo: %s"):format(i, call(C.GetSearchResultMemberInfo, picked, i)))
+    end
+    Report.Add("  LeaderInfo: " .. call(C.GetSearchResultLeaderInfo, picked))
+  else
+    Report.Add("no search results to probe members (search first)")
+  end
+
+  -- How the Looking For Group window is toggled.
+  local toggles = {}
+  for _, name in ipairs({ "LFGVanilla_ToggleFrame", "ToggleGroupFinderFrame", "ToggleLFGParentFrame",
+    "PVEFrame_ToggleFrame", "ToggleLFDParentFrame", "GroupFinderVanillaStyle_LoadUI", "ChatFrame_SendTell",
+    "LFGParentFrame", "PVEFrame", "LFGMicroButton", "LFDMicroButton", "GroupFinderMicroButton" }) do
+    toggles[#toggles + 1] = name .. "=" .. type(_G[name])
+  end
+  Report.Add("globals: " .. table.concat(toggles, " "))
+  local micro = {}
+  for k, v in pairs(_G) do
+    if type(k) == "string" and k:find("MicroButton$") and type(v) == "table" then micro[#micro + 1] = k end
+  end
+  table.sort(micro)
+  Report.Add("micro buttons: " .. table.concat(micro, ","))
+  if GetNumBindings then
+    for i = 1, GetNumBindings() do
+      local command, _, key1, key2 = GetBinding(i)
+      if type(command) == "string" and (command:find("LFG") or command:find("GROUP")) then
+        Report.Add(("binding %s = %s %s"):format(command, tostring(key1), tostring(key2)))
+      end
+    end
+  end
+  Report.Finish(ns.db)
+  print("|cff40c0ffOpenSpot:|r " .. L.DEBUG_DONE)
+end
+
 SLASH_OPENSPOT1 = "/openspot"
 SlashCmdList.OPENSPOT = function(msg)
   msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-  if msg == "debug" then
+  if msg == "probe" then
+    local ok, err = pcall(probeReport)
+    if not ok then
+      ns.db.report = { "probe failed: " .. tostring(err) }
+      print("|cff40c0ffOpenSpot:|r probe failed: " .. tostring(err))
+    end
+  elseif msg == "debug" then
     local ok, err = pcall(debugReport)
     if not ok then
       ns.db.report = { "debug failed: " .. tostring(err) }

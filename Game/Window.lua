@@ -209,7 +209,7 @@ local function buildRow(parent, i)
   row.join:SetPoint("LEFT", row, "LEFT", COL.join[1], 0)
   row.join:SetScript("OnClick", function()
     if row.data then
-      Search.Apply(row.data.id, ns.CurrentWant())
+      Search.Apply(row.data.id, ns.CurrentWant(), row.data.leader)
       updateRows()
     end
   end)

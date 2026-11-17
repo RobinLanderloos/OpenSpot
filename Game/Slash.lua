@@ -23,6 +23,12 @@ local function debugReport()
   Report.Add("search: " .. keys(ns.Search.diag.lastSearch or {}) .. " | apply: " .. keys(ns.Search.diag.lastApply or {})
     .. " | lastWhisperTarget: " .. tostring(ns.Search.diag.lastWhisperTarget))
   Report.Add("whispers: " .. keys(OpenSpotCharDB.whispers or {}))
+  local party = {}
+  if type(C_PartyInfo) == "table" then
+    for k, v in pairs(C_PartyInfo) do if type(v) == "function" then party[#party + 1] = k end end
+  end
+  table.sort(party)
+  Report.Add("C_PartyInfo: " .. table.concat(party, ","))
   local want = ns.CurrentWant()
   Report.Say("party size " .. ns.PartySize() .. ", want: " .. keys(want.mode == "party" and want.counts or want.roles)
     .. " mode=" .. want.mode .. ", template: " .. keys(ns.db.template))

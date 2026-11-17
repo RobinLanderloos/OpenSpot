@@ -30,6 +30,7 @@ ns.L = {
   WHISPER = "Whisper",
   JOIN = "Join",
   STATUS_applied = "Applied",
+  STATUS_requested = "Asked",
   STATUS_invited = "Invited",
   STATUS_declined = "Declined",
   STATUS_timedout = "Timed out",

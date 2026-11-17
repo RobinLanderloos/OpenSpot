@@ -95,29 +95,46 @@ function Search.Whisper(name)
   end
 end
 
-function Search.CanApply() return type(C.ApplyToGroup) == "function" end
+local requested = {} -- resultID -> true, this session (request invites have no status to read)
 
--- Applies with the roles the player is looking for (or every role their
--- class can play when nothing is ticked).
-function Search.Apply(resultID, want)
-  local tank, healer, dps
-  if want and want.mode == "solo" and ns.Fit.IsActive(want) then
-    tank, healer, dps = want.roles.TANK, want.roles.HEALER, want.roles.DAMAGER
+local function requestInvite()
+  return type(C_PartyInfo) == "table" and type(C_PartyInfo.RequestInviteFromUnit) == "function"
+    and C_PartyInfo.RequestInviteFromUnit or nil
+end
+
+function Search.CanApply() return requestInvite() ~= nil or type(C.ApplyToGroup) == "function" end
+
+-- Join: Forever's Classic-style browser asks the leader for an invite
+-- (C_PartyInfo.RequestInviteFromUnit); the retail application call
+-- (C_LFGList.ApplyToGroup) is only the fallback. Must run from a click.
+function Search.Apply(resultID, want, leader)
+  local request = requestInvite()
+  local ok, err, path
+  if request and leader then
+    path = "RequestInviteFromUnit"
+    ok, err = pcall(request, leader)
   else
-    local ok, t, h, d = pcall(C.GetAvailableRoles)
-    if ok then tank, healer, dps = t, h, d else tank, healer, dps = false, false, true end
+    path = "ApplyToGroup"
+    local tank, healer, dps
+    if want and want.mode == "solo" and ns.Fit.IsActive(want) then
+      tank, healer, dps = want.roles.TANK, want.roles.HEALER, want.roles.DAMAGER
+    else
+      local okRoles, t, h, d = pcall(C.GetAvailableRoles)
+      if okRoles then tank, healer, dps = t, h, d else tank, healer, dps = false, false, true end
+    end
+    ok, err = pcall(C.ApplyToGroup, resultID, tank and true or false, healer and true or false, dps and true or false)
   end
-  local ok, err = pcall(C.ApplyToGroup, resultID, tank and true or false, healer and true or false, dps and true or false)
-  Search.diag.lastApply = { id = resultID, ok = ok, err = not ok and tostring(err) or nil }
+  if ok then requested[resultID] = true end
+  Search.diag.lastApply = { id = resultID, leader = leader, path = path, ok = ok, err = not ok and tostring(err) or nil }
   return ok, err
 end
 
 -- "applied", "invited", ... or nil when the player hasn't applied.
 function Search.ApplicationStatus(resultID)
-  if type(C.GetApplicationInfo) ~= "function" then return nil end
+  if type(C.GetApplicationInfo) ~= "function" then return requested[resultID] and "requested" or nil end
   local ok, _, status, pending = pcall(C.GetApplicationInfo, resultID)
   if not ok then return nil end
   if pending and pending ~= "none" then return pending end
   if status and status ~= "none" then return status end
-  return nil
+  return requested[resultID] and "requested" or nil
 end

@@ -180,6 +180,8 @@ rawset(blizz, "Hide", function(s) s.shown = false; if s.scripts.OnHide then s.sc
 _G.LFGParentFrame = blizz
 _G.HideUIPanel = function(f) f:Hide() end
 _G.ToggleGroupFinderFrame = function() if blizz.shown then blizz:Hide() else blizz:Show() end end
+local inviteRequests = {}
+_G.C_PartyInfo = { RequestInviteFromUnit = function(name) inviteRequests[#inviteRequests + 1] = name end }
 local told
 _G.ChatFrame_SendTell = function(name) told = name end
 
@@ -295,9 +297,13 @@ check("and dimmed", rawget(row1, "alpha") == 0.6, rawget(row1, "alpha"))
 check("other rows untouched", rowFor(2).tag.text == "" and rawget(rowFor(2), "alpha") == 1)
 check("whispers saved per character", OpenSpotCharDB.whispers.leader1 ~= nil)
 click(rowFor(2).join)
-check("Join applies with the ticked roles", applied[2] and applied[2][1] == true and applied[2][2] == false
-  and applied[2][3] == true)
-check("the row shows Applied", rowFor(2).join.text == "Applied", rowFor(2).join.text)
+check("Join asks the leader for an invite", inviteRequests[1] == "Leader2", tostring(inviteRequests[1]))
+check("and doesn't use the retail application", applied[2] == nil)
+check("the row shows Asked", rowFor(2).join.text == "Asked", rowFor(2).join.text)
+_G.C_PartyInfo = nil
+click(rowFor(3).join)
+check("without request invites, Join falls back to applying", applied[3] and applied[3][1] == true)
+check("the row shows Applied", rowFor(3).join.text == "Applied", rowFor(3).join.text)
 
 -- Unticking the last activity clears the list; ticking again searches.
 searched = nil

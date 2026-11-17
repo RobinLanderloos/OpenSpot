@@ -296,14 +296,7 @@ check("a whispered leader's row is tagged", row1.tag.text == "Whispered <1m", ro
 check("and dimmed", rawget(row1, "alpha") == 0.6, rawget(row1, "alpha"))
 check("other rows untouched", rowFor(2).tag.text == "" and rawget(rowFor(2), "alpha") == 1)
 check("whispers saved per character", OpenSpotCharDB.whispers.leader1 ~= nil)
-click(rowFor(2).join)
-check("Join asks the leader for an invite", inviteRequests[1] == "Leader2", tostring(inviteRequests[1]))
-check("and doesn't use the retail application", applied[2] == nil)
-check("the row shows Asked", rowFor(2).join.text == "Asked", rowFor(2).join.text)
-_G.C_PartyInfo = nil
-click(rowFor(3).join)
-check("without request invites, Join falls back to applying", applied[3] and applied[3][1] == true)
-check("the row shows Applied", rowFor(3).join.text == "Applied", rowFor(3).join.text)
+check("rows have no Join button", rawget(rowFor(2), "join") == nil)
 
 -- Unticking the last activity clears the list; ticking again searches.
 searched = nil
@@ -337,6 +330,13 @@ check("and closes ours", window().shown == false)
 blizz:Hide()
 ToggleGroupFinderFrame()
 check("afterwards the key opens ours again", window().shown == true and blizz.shown == false)
+
+-- Something else (Who results) opening Blizzard's window keeps it.
+window():Hide()
+blizz:Show()
+check("other ways of opening Blizzard's window are left alone", blizz.shown == true and window().shown == false)
+blizz:Hide()
+ToggleGroupFinderFrame()
 
 ns.db.template.HEALER = 2
 ns.Changed()

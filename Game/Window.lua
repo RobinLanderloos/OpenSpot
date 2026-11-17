@@ -1,6 +1,6 @@
 -- OpenSpot's own group search window (docs/adr/0005): category tabs, an
 -- activity checklist, a Search button, role filter, and result rows we draw
--- ourselves (activity, leader, members, open spots, age, Whisper, Join).
+-- ourselves (activity, leader, members, open spots, age, Whisper).
 local addonName, ns = ...
 
 local L, Fit, Rows, Activities, Whispers, Search =
@@ -17,7 +17,7 @@ local LEFT_WIDTH = 210
 -- and headers both use this, so they always line up.
 local COL = {
   activity = { 4, 132 }, leader = { 140, 104 }, members = { 248, 124 }, count = { 338, 34 },
-  open = { 376, 62 }, age = { 442, 44 }, whisper = { 492, 58 }, join = { 554, 54 },
+  open = { 376, 62 }, age = { 442, 60 }, whisper = { 538, 70 },
 }
 
 local frame
@@ -116,10 +116,6 @@ local function updateRows()
       row.count:SetText(("%d/%d"):format(data.listing.numMembers, data.listing.maxMembers))
       row.open:SetText(Rows.OpenText(Fit.OpenSpots(data.listing, ns.Settings())))
       row.age:SetText(Rows.AgeText(data.age))
-      local status = Search.ApplicationStatus(data.id)
-      row.join:SetText(status and (L["STATUS_" .. status] or status) or L.JOIN)
-      row.join:SetEnabled(status == nil)
-      row.join:SetShown(Search.CanApply())
       row:SetAlpha(sentAt and 0.6 or 1)
       row:Show()
     end
@@ -205,14 +201,6 @@ local function buildRow(parent, i)
   row.whisper = button(row, L.WHISPER, COL.whisper[2], 20)
   row.whisper:SetPoint("LEFT", row, "LEFT", COL.whisper[1], 0)
   row.whisper:SetScript("OnClick", function() Search.Whisper(row.data and row.data.leader) end)
-  row.join = button(row, L.JOIN, COL.join[2], 20)
-  row.join:SetPoint("LEFT", row, "LEFT", COL.join[1], 0)
-  row.join:SetScript("OnClick", function()
-    if row.data then
-      Search.Apply(row.data.id, ns.CurrentWant(), row.data.leader)
-      updateRows()
-    end
-  end)
 
   row:SetScript("OnEnter", showMembers)
   row:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -505,7 +493,6 @@ local events = CreateFrame("Frame")
 events:RegisterEvent("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 events:RegisterEvent("LFG_LIST_SEARCH_RESULT_UPDATED")
 events:RegisterEvent("LFG_LIST_SEARCH_FAILED")
-events:RegisterEvent("LFG_LIST_APPLICATION_STATUS_UPDATED")
 events:RegisterEvent("CHAT_MSG_WHISPER_INFORM")
 events:RegisterEvent("PLAYER_LOGIN")
 events:SetScript("OnEvent", function(_, event, a1, a2)
@@ -527,7 +514,7 @@ events:SetScript("OnEvent", function(_, event, a1, a2)
     setSearching(false)
     frame.status:SetText(L.SEARCH_FAILED:format(tostring(a1)))
   elseif frame:IsShown() and not reloadPending then
-    -- A listing changed (members, delisted) or an application moved on.
+    -- A listing changed (members joined, delisted).
     -- These come one per listing, so reload once for a burst of them.
     reloadPending = true
     C_Timer.After(0.3, function()

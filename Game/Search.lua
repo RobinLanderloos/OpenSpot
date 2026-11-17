@@ -1,5 +1,5 @@
 -- Talks to C_LFGList for our window: categories and activities, searching,
--- reading results into rows, whispering and applying.
+-- reading results into rows, whispering.
 local addonName, ns = ...
 
 local Search = { diag = {} }
@@ -93,48 +93,4 @@ function Search.Whisper(name)
   elseif type(ChatFrameUtil) == "table" and ChatFrameUtil.SendTell then
     ChatFrameUtil.SendTell(name)
   end
-end
-
-local requested = {} -- resultID -> true, this session (request invites have no status to read)
-
-local function requestInvite()
-  return type(C_PartyInfo) == "table" and type(C_PartyInfo.RequestInviteFromUnit) == "function"
-    and C_PartyInfo.RequestInviteFromUnit or nil
-end
-
-function Search.CanApply() return requestInvite() ~= nil or type(C.ApplyToGroup) == "function" end
-
--- Join: Forever's Classic-style browser asks the leader for an invite
--- (C_PartyInfo.RequestInviteFromUnit); the retail application call
--- (C_LFGList.ApplyToGroup) is only the fallback. Must run from a click.
-function Search.Apply(resultID, want, leader)
-  local request = requestInvite()
-  local ok, err, path
-  if request and leader then
-    path = "RequestInviteFromUnit"
-    ok, err = pcall(request, leader)
-  else
-    path = "ApplyToGroup"
-    local tank, healer, dps
-    if want and want.mode == "solo" and ns.Fit.IsActive(want) then
-      tank, healer, dps = want.roles.TANK, want.roles.HEALER, want.roles.DAMAGER
-    else
-      local okRoles, t, h, d = pcall(C.GetAvailableRoles)
-      if okRoles then tank, healer, dps = t, h, d else tank, healer, dps = false, false, true end
-    end
-    ok, err = pcall(C.ApplyToGroup, resultID, tank and true or false, healer and true or false, dps and true or false)
-  end
-  if ok then requested[resultID] = true end
-  Search.diag.lastApply = { id = resultID, leader = leader, path = path, ok = ok, err = not ok and tostring(err) or nil }
-  return ok, err
-end
-
--- "applied", "invited", ... or nil when the player hasn't applied.
-function Search.ApplicationStatus(resultID)
-  if type(C.GetApplicationInfo) ~= "function" then return requested[resultID] and "requested" or nil end
-  local ok, _, status, pending = pcall(C.GetApplicationInfo, resultID)
-  if not ok then return nil end
-  if pending and pending ~= "none" then return pending end
-  if status and status ~= "none" then return status end
-  return requested[resultID] and "requested" or nil
 end

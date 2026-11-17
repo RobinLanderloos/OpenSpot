@@ -20,7 +20,7 @@ end
 local function debugReport()
   Report.Start()
   Report.Say("toggle hooked: " .. tostring(ns.Toggle.diag.hooked) .. ", useBlizzard: " .. tostring(ns.db.useBlizzard))
-  Report.Add("search: " .. keys(ns.Search.diag.lastSearch or {}) .. " | apply: " .. keys(ns.Search.diag.lastApply or {})
+  Report.Add("search: " .. keys(ns.Search.diag.lastSearch or {}) .. " | toggle: " .. keys(ns.Toggle.diag)
     .. " | lastWhisperTarget: " .. tostring(ns.Search.diag.lastWhisperTarget))
   Report.Add("whispers: " .. keys(OpenSpotCharDB.whispers or {}))
   local party = {}

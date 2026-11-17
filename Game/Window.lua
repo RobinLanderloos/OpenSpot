@@ -10,7 +10,7 @@ local Window = {}
 ns.Window = Window
 
 local ROW_HEIGHT, VISIBLE_ROWS = 24, 14
-local WIDTH, HEIGHT = 860, 470
+local WIDTH, HEIGHT = 860, 500
 local LEFT_WIDTH = 210
 
 -- Column x positions and widths inside a result row (row width 610). Rows
@@ -125,6 +125,13 @@ local function updateRows()
     end
   end
   frame.empty:SetShown(#state.shown == 0)
+  local total = #state.shown
+  if total > VISIBLE_ROWS then
+    frame.position:SetText(L.ROWS_POSITION:format(state.offset + 1,
+      math.min(state.offset + VISIBLE_ROWS, total), total))
+  else
+    frame.position:SetText("")
+  end
 end
 
 local function refilter()
@@ -437,6 +444,8 @@ local function build()
   frame.empty = list:CreateFontString(nil, "ARTWORK", "GameFontDisable")
   frame.empty:SetPoint("CENTER", list, "CENTER")
   frame.empty:SetText(L.NO_RESULTS)
+  frame.position = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+  frame.position:SetPoint("TOPLEFT", list, "BOTTOMLEFT", 4, -6)
 
   -- Bottom: Blizzard's window and settings.
   local blizzard = button(frame, L.BLIZZARD_WINDOW, 150, 22)

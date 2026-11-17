@@ -18,6 +18,7 @@ ns.L = {
   TICK_FIRST = "Tick one or more activities first.",
   SUITED_ONLY = "Suited to my level",
   SHOWING_ALL = "%d listings",
+  ROWS_POSITION = "%d-%d of %d, scroll for more",
   NO_RESULTS = "No listings. Tick activities and press Search.",
   COL_ACTIVITY = "Activity",
   COL_LEADER = "Leader",

@@ -254,9 +254,11 @@ click(buttonText("Search"))
 check("search without ticks asks to tick", shownTexts():find("Tick one or more activities first.", 1, true) ~= nil)
 local deadmines = find(function(w) return rawget(w, "activityID") == 799 and visible(w) end)
 click(deadmines)
-click(buttonText("Search"))
-check("search runs with the ticked activities", searched and searched.category == 2 and searched.ids == "799",
+check("ticking an activity searches right away", searched and searched.category == 2 and searched.ids == "799",
   searched and (searched.category .. " " .. searched.ids))
+searched = nil
+click(buttonText("Search"))
+check("Search button searches again", searched and searched.ids == "799")
 check("ticked activities saved per character", OpenSpotCharDB.activities[799] == true)
 fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 check("nothing ticked shows every listing", shownIDs() == "1,2,3,4,5,6", shownIDs())
@@ -296,6 +298,14 @@ click(rowFor(2).join)
 check("Join applies with the ticked roles", applied[2] and applied[2][1] == true and applied[2][2] == false
   and applied[2][3] == true)
 check("the row shows Applied", rowFor(2).join.text == "Applied", rowFor(2).join.text)
+
+-- Unticking the last activity clears the list; ticking again searches.
+searched = nil
+click(deadmines)
+check("unticking the last activity clears the list", shownIDs() == "" and searched == nil, shownIDs())
+click(deadmines)
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+check("ticking again searches and fills the list", searched and shownIDs() == "1,2,3,5,6", shownIDs())
 
 -- Sorting by column.
 local leaderHeader = find(function(w)

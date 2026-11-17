@@ -229,6 +229,8 @@ local function updateActivities()
       check:SetScript("OnClick", function(self)
         Activities.Toggle(ticks(), self.activityID)
         self:SetChecked(ticks()[self.activityID] == true)
+        -- The tick is a real click, so it may start the search itself.
+        Window.RunSearch(true)
       end)
       activityChecks[i] = check
     end
@@ -286,10 +288,18 @@ local function setSearching(on)
   frame.search:SetText(on and L.SEARCHING or L.SEARCH)
 end
 
-local function onSearchClick()
+-- fromTick: started by (un)ticking an activity. Unticking the last one
+-- clears the list instead of asking to tick something.
+function Window.RunSearch(fromTick)
   local ids = Activities.Ticked(ticks(), offered())
   if #ids == 0 then
-    frame.status:SetText(L.TICK_FIRST)
+    if fromTick then
+      frame.status:SetText("")
+      state.rows = {}
+      refilter()
+    else
+      frame.status:SetText(L.TICK_FIRST)
+    end
     return
   end
   frame.status:SetText("")
@@ -365,7 +375,7 @@ local function build()
 
   frame.search = button(frame, L.SEARCH, LEFT_WIDTH - 24, 26)
   frame.search:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 12, 42)
-  frame.search:SetScript("OnClick", onSearchClick)
+  frame.search:SetScript("OnClick", function() Window.RunSearch(false) end)
   frame.status = frame:CreateFontString(nil, "ARTWORK", "GameFontRedSmall")
   frame.status:SetPoint("BOTTOMLEFT", frame.search, "TOPLEFT", 0, 4)
   frame.status:SetWidth(LEFT_WIDTH - 24)

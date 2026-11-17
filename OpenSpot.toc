@@ -2,7 +2,7 @@
 ## Title: OpenSpot
 ## Notes: Filters the Looking For Group browser to groups with an open spot for your role.
 ## Author: Robin
-## Version: 0.1.0-beta
+## Version: 0.1.0
 ## SavedVariables: OpenSpotDB
 ## SavedVariablesPerCharacter: OpenSpotCharDB
 ## IconTexture: Interface\Icons\INV_Misc_GroupLooking

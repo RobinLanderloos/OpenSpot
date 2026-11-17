@@ -33,3 +33,11 @@ test("ticks toggle per activity and only offered ones are searched", function()
   eq(table.concat(ids, ","), "800,801")
   eq(table.concat(Activities.Ticked(ticks, Activities.Suited(LIST, 15)), ","), "", "none suited at 15")
 end)
+
+test("clear unticks the given activities only", function()
+  local ticks = { [800] = true, [801] = true, [872] = true }
+  Activities.Clear(ticks, LIST)
+  eq(ticks[800], nil, "800")
+  eq(ticks[801], nil, "801")
+  eq(ticks[872], true, "other category kept")
+end)

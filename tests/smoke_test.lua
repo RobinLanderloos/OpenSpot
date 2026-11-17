@@ -307,6 +307,14 @@ click(deadmines)
 fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 check("ticking again searches and fills the list", searched and shownIDs() == "1,2,3,5,6", shownIDs())
 
+-- Clear unticks this tab's activities and empties the list.
+click(buttonText("Clear"))
+check("Clear unticks the activities", OpenSpotCharDB.activities[799] == nil)
+check("and empties the list", shownIDs() == "", shownIDs())
+click(deadmines)
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+check("ticking after Clear searches again", shownIDs() == "1,2,3,5,6", shownIDs())
+
 -- Sorting by column.
 local leaderHeader = find(function(w)
   local label = rawget(w, "label")

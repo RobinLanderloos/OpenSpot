@@ -50,3 +50,8 @@ function Activities.Ticked(ticks, offered)
   end
   return ids
 end
+
+-- Unticks every activity in `list` (e.g. one category); other ticks stay.
+function Activities.Clear(ticks, list)
+  for _, a in ipairs(list) do ticks[a.id] = nil end
+end

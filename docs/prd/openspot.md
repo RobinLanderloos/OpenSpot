@@ -44,7 +44,7 @@ OpenSpot adds Tank / Healer / DPS toggles to the Browse tab. I tick the open spo
   - `listing`: `{ numMembers, maxMembers, kind = "dungeon" | "raid" | "other", counts = { TANK, HEALER, DAMAGER, NOROLE }, solo }`.
   - `want`: `{ mode = "solo", roles = { TANK = bool, ... } }` or `{ mode = "party", counts = { TANK = n, ... }, size = n }`.
   - Template rule (ADR 0002): dungeon open = max(0, template - members of that role), unassigned members added to DAMAGER; other kinds = `free` for every role while free > 0.
-  - Solo = OR over ticked roles; party = AND over counts plus `free >= size - 1` (ADR 0003). No ticks/zero counts = everything fits.
+  - Solo = OR over ticked roles; party = AND over counts plus `free >= size` (every party member needs a slot; ADR 0003). No ticks/zero counts = everything fits.
 - **Core/Selection** (pure): holds solo ticks and party counts; `Selection.FromParty(roles)` builds counts from assigned roles (NONE adds nothing); switching party → solo restores the solo ticks; `Selection.Want(state, partySize)` produces the `want` for Fit.
 - **Core/Summary** (pure): the "Showing X of Y (Tank, DPS)" text.
 - **Game/Listing** adapter: turns a search result ID into a `listing` (from `C_LFGList.GetSearchResultInfo`, `GetSearchResultMemberCounts`, `GetActivityInfoTable` for max size and dungeon/raid kind). How a single-player listing is recognised is unverified and comes out of the debug report.

@@ -1,0 +1,101 @@
+{
+  "userStories": [
+    {
+      "id": "001",
+      "title": "Solo role filter on the Browse tab",
+      "description": "Tank / Healer / DPS toggles on Forever's Browse tab. Ticking roles hides 5-man dungeon listings without an open spot for any ticked role (template 1/1/3, unassigned members count as DPS, full groups always hidden). A 'Showing X of Y (roles)' line shows under the list. Nothing ticked = no filtering. Filter re-applies on every results refresh. Ships with `/openspot debug`, writing each listing's raw member counts, activity, size and verdict into SavedVariables. Stories 1-5, 7, 8, 10, 12, 14, 22, 23, 25, 26.",
+      "status": "completed",
+      "markdownFile": "docs/issues/001-solo-role-filter-on-the-browse-tab.md",
+      "acceptanceCriteria": [
+        "Fit evaluates dungeon listings against the 1/1/3 template, OR over ticked roles (unit tests)",
+        "Unassigned members count as DPS; full listings never fit (unit tests)",
+        "Summary text 'Showing X of Y (Tank, DPS)' (unit tests)",
+        "Toggles and counter appear on the Browse tab and hide non-fitting rows (smoke test)",
+        "/openspot debug stores a report in OpenSpotDB.report",
+        "Search, apply and whisper still go through Blizzard's window"
+      ],
+      "blockedBy": []
+    },
+    {
+      "id": "002",
+      "title": "Raids, other activities and single-player listings",
+      "description": "Activities without a template (raids, other) count as open for every role while not full. Single-player listings are hidden while any role is ticked. Stories 9, 13.",
+      "status": "completed",
+      "markdownFile": "docs/issues/002-raids-other-activities-and-single-player-listings.md",
+      "acceptanceCriteria": [
+        "Raid/other listing with free slots fits for any ticked role; full one does not (unit tests)",
+        "Single-player listings hidden while filtering, shown with nothing ticked (unit tests)",
+        "Debug report records the fields used to recognise single-player listings"
+      ],
+      "blockedBy": [
+        "001"
+      ]
+    },
+    {
+      "id": "003",
+      "title": "Remember ticks per character",
+      "description": "Solo ticks are saved in per-character SavedVariables and restored on login. Story 6.",
+      "status": "completed",
+      "markdownFile": "docs/issues/003-remember-ticks-per-character.md",
+      "acceptanceCriteria": [
+        "Ticks survive /reload and differ per character",
+        "Selection state round-trips through its saved form (unit tests)"
+      ],
+      "blockedBy": [
+        "001"
+      ]
+    },
+    {
+      "id": "004",
+      "title": "Party mode with pre-filled role counts",
+      "description": "In a party the toggles become per-role counts, pre-filled from members' assigned roles and adjustable by hand. A listing fits only if every counted role is open and it has free slots for the whole party. Counts refresh on roster/role changes; leaving the party restores solo ticks. Stories 15-21.",
+      "status": "completed",
+      "markdownFile": "docs/issues/004-party-mode-with-pre-filled-role-counts.md",
+      "acceptanceCriteria": [
+        "Counts pre-filled from assigned roles, NONE adds nothing (unit tests)",
+        "AND over counts plus free >= party size - 1 (unit tests)",
+        "Manual adjustment kept until the roster or roles change (unit tests)",
+        "Leaving the party restores solo ticks (unit tests)",
+        "Steppers shown in a party, toggles solo (smoke test)"
+      ],
+      "blockedBy": [
+        "001",
+        "003"
+      ]
+    },
+    {
+      "id": "005",
+      "title": "Settings panel and slash command",
+      "description": "Settings panel (Settings API) with the 5-man template numbers; /openspot opens it. Stories 11, 24.",
+      "status": "completed",
+      "markdownFile": "docs/issues/005-settings-panel-and-slash-command.md",
+      "acceptanceCriteria": [
+        "Changing the template changes which listings fit (unit tests)",
+        "Template saved account-wide",
+        "/openspot opens settings, /openspot debug still runs the report (smoke test)"
+      ],
+      "blockedBy": [
+        "001"
+      ]
+    },
+    {
+      "id": "006",
+      "title": "Verify client assumptions in game (HITL)",
+      "description": "The user runs the addon in Forever with the Browse tab open and runs /openspot debug; we read the SavedVariables report and fix what differs from the stand-in: how rows are hidden, member-count fields (incl. *_REMAINING), single-player recognition, activity kind and size.",
+      "status": "open",
+      "markdownFile": "docs/issues/006-verify-client-assumptions-in-game.md",
+      "acceptanceCriteria": [
+        "Rows really disappear in the live Browse tab and the counter matches",
+        "Report confirms member-count and activity fields",
+        "Apply/search not tainted (no 'blocked action' errors)",
+        "api-notes.md updated with verified facts"
+      ],
+      "blockedBy": [
+        "001",
+        "002",
+        "004",
+        "005"
+      ]
+    }
+  ]
+}

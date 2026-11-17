@@ -35,8 +35,6 @@ OpenSpot adds Tank / Healer / DPS toggles to the Browse tab. I tick the open spo
 23. As a player, I want searching, applying and whispering to keep working exactly as in Blizzard's window, so that the addon never breaks the group finder.
 24. As a player, I want a slash command to open settings, so that I can change the template without hunting for it.
 25. As the developer, I want a `/openspot debug` report written to SavedVariables, so that I can see what the client returns without the player copying chat.
-27. As a player, I want a message button on each listing that opens a whisper to its leader, so that I can ask for a spot in one click.
-28. As a player, I want listings whose leader I whispered in the last hour marked and dimmed (whatever way I whispered), so that I don't message the same leader twice; remembered per character across reloads.
 26. As the developer, I want the debug report to list each listing's member counts, activity, size and fit verdict, so that I can check the filter against reality.
 
 ## Implementation Decisions

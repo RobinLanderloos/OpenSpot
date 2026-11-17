@@ -243,25 +243,6 @@ ns.db.template.HEALER = 2
 ns.Changed()
 check("template change re-filters", drawnIDs() == "1,2,3,5,6", drawnIDs())
 
--- Message buttons and whisper marks.
-local function rowFor(id)
-  for _, row in ipairs(rowFrames) do
-    local b = rawget(row, "openSpotMessage")
-    if b and b.leader == "Leader" .. id and visible(row) then return row, b end
-  end
-end
-local row1, msg1 = rowFor(1)
-check("each row gets a message button", msg1 ~= nil and msg1.text == "Msg", msg1 and msg1.text)
-msg1.scripts.OnClick(msg1)
-check("the button opens a whisper to the leader", told == "Leader1", told)
-fire("CHAT_MSG_WHISPER_INFORM", "hi", "Leader1-Forever")
-row1, msg1 = rowFor(1)
-check("a whispered leader's row is marked", msg1.text == "Sent <1m", msg1.text)
-check("and dimmed", rawget(row1, "alpha") == 0.6, rawget(row1, "alpha"))
-local row2, msg2 = rowFor(2)
-check("other rows stay unmarked", msg2 and msg2.text == "Msg" and rawget(row2, "alpha") == 1)
-check("whispers saved per character", OpenSpotCharDB.whispers.leader1 ~= nil)
-
 local ok, out = slash("OPENSPOT", "debug")
 check("/openspot debug runs", ok, out)
 check("debug report stored", type(OpenSpotDB.report) == "table" and #OpenSpotDB.report > 5,

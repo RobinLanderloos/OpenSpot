@@ -85,7 +85,6 @@ local function redraw()
     end
   end
   updateCounter()
-  if ns.Rows then ns.Rows.Refresh() end
 end
 
 local function onResultsUpdated()
@@ -168,7 +167,6 @@ function Browse.Attach()
     end
   end
   Browse.diag.hooked = table.concat(hooked, ",")
-  if ns.Rows then ns.Rows.Attach(browse) end
   updateButtons()
   updateCounter()
   return true

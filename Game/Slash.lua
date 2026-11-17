@@ -35,10 +35,6 @@ local function debugReport()
   local want = ns.CurrentWant()
   Report.Say("party size " .. ns.PartySize() .. ", want: " .. keys(want.mode == "party" and want.counts or want.roles)
     .. " mode=" .. want.mode .. ", template: " .. keys(ns.db.template))
-  local rd = ns.Rows.diag
-  Report.Say(("rows: hook=%s rows=%s box=%s lastWhisperTarget=%s error=%s"):format(tostring(rd.hook),
-    tostring(rd.rows), tostring(rd.box), tostring(rd.lastTarget), tostring(rd.error)))
-  Report.Add("whispers: " .. keys(OpenSpotCharDB.whispers or {}))
   local shown, total = ns.Browse.Counts()
   Report.Say("counter: showing " .. shown .. " of " .. total)
 

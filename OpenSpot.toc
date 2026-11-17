@@ -14,6 +14,7 @@ Core\Summary.lua
 Core\Whispers.lua
 Core\Activities.lua
 Core\Rows.lua
+Game\Skin.lua
 Game\Report.lua
 Game\Main.lua
 Game\Listing.lua

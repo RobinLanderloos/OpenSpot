@@ -55,7 +55,7 @@ end
 
 -- ---------------------------------------------------------------- helpers
 local function button(parent, text, width, height)
-  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+  local b = ns.Skin.Button(CreateFrame("Button", nil, parent))
   b:SetSize(width, height or 22)
   b:SetText(text)
   return b
@@ -169,8 +169,10 @@ local function buildRow(parent, i)
   row:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -(i - 1) * ROW_HEIGHT)
   local bg = row:CreateTexture(nil, "BACKGROUND")
   bg:SetAllPoints()
-  bg:SetColorTexture(1, 1, 1, i % 2 == 0 and 0.04 or 0.0)
-  row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+  bg:SetColorTexture(1, 0.9, 0.7, i % 2 == 0 and 0.035 or 0.0)
+  local hover = row:CreateTexture(nil, "HIGHLIGHT")
+  hover:SetAllPoints()
+  hover:SetColorTexture(ns.Skin.accent[1], ns.Skin.accent[2], ns.Skin.accent[3], 0.12)
 
   local function text(x, width, font)
     local fs = row:CreateFontString(nil, "ARTWORK", font or "GameFontHighlightSmall")
@@ -214,7 +216,7 @@ local function updateActivities()
   for i, a in ipairs(list) do
     local check = activityChecks[i]
     if not check then
-      check = CreateFrame("CheckButton", nil, frame.activityContent, "UICheckButtonTemplate")
+      check = ns.Skin.Check(CreateFrame("CheckButton", nil, frame.activityContent))
       check:SetSize(22, 22)
       check:SetPoint("TOPLEFT", frame.activityContent, "TOPLEFT", 0, -(i - 1) * 22)
       check.label = check:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -242,7 +244,7 @@ end
 
 local function updateTabs()
   for _, tab in ipairs(tabs) do
-    if tab.categoryID == category() then tab:LockHighlight() else tab:UnlockHighlight() end
+    ns.Skin.SetSelected(tab, tab.categoryID == category())
   end
 end
 
@@ -259,8 +261,8 @@ local function updateRoleButtons()
       b:SetText(L[role])
       on = want.roles[role]
     end
-    b:SetAlpha(on and 1 or 0.5)
-    if on then b:LockHighlight() else b:UnlockHighlight() end
+    b:SetAlpha(on and 1 or 0.7)
+    ns.Skin.SetSelected(b, on)
   end
 end
 
@@ -309,7 +311,7 @@ end
 
 -- ----------------------------------------------------------------- build
 local function build()
-  frame = CreateFrame("Frame", "OpenSpotWindow", UIParent, "BasicFrameTemplateWithInset")
+  frame = ns.Skin.Window(CreateFrame("Frame", "OpenSpotWindow", UIParent))
   frame:SetSize(WIDTH, HEIGHT)
   frame:SetFrameStrata("HIGH")
   frame:SetToplevel(true)
@@ -345,7 +347,7 @@ local function build()
   end
 
   -- Left: suited-only toggle, activity checklist, Search.
-  frame.suited = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
+  frame.suited = ns.Skin.Check(CreateFrame("CheckButton", nil, frame))
   frame.suited:SetSize(22, 22)
   frame.suited:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -58)
   frame.suitedLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
@@ -357,6 +359,7 @@ local function build()
   end)
 
   local scroll = CreateFrame("ScrollFrame", "OpenSpotActivityScroll", frame, "UIPanelScrollFrameTemplate")
+  ns.Skin.ScrollBar(scroll)
   scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -84)
   scroll:SetSize(LEFT_WIDTH - 30, HEIGHT - 200)
   frame.activityContent = CreateFrame("Frame", nil, scroll)
@@ -387,6 +390,7 @@ local function build()
   local label = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
   label:SetPoint("TOPLEFT", frame, "TOPLEFT", right, -62)
   label:SetText(L.FILTER_LABEL)
+  label:SetTextColor(unpack(ns.Skin.accent))
   prev = label
   for _, role in ipairs(Fit.ROLES) do
     local b = button(frame, L[role], 76, 22)
@@ -410,6 +414,15 @@ local function build()
   local list = CreateFrame("Frame", nil, frame)
   list:SetPoint("TOPLEFT", frame, "TOPLEFT", right, -116)
   list:SetSize(WIDTH - right - 14, VISIBLE_ROWS * ROW_HEIGHT)
+  ns.Skin.Panel(list, ns.Skin.colors.panel)
+  -- A line between the activity column and the results.
+  local split = ns.Skin.Divider(frame)
+  split:SetWidth(1)
+  split:SetPoint("TOPLEFT", frame, "TOPLEFT", right - 5, -56)
+  split:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", right - 5, 40)
+  local footer = ns.Skin.Divider(frame)
+  footer:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 1, 40)
+  footer:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -1, 40)
   list:EnableMouseWheel(true)
   list:SetScript("OnMouseWheel", function(_, delta)
     state.offset = math.max(0, math.min(state.offset - delta * 3, #state.shown - VISIBLE_ROWS))
@@ -426,8 +439,11 @@ local function build()
     local label = h:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
     label:SetPoint("LEFT", h, "LEFT", 0, 0)
     label:SetText(col[2])
+    label:SetTextColor(unpack(ns.Skin.accent))
     h.label = label
-    h:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD")
+    local hover = h:CreateTexture(nil, "HIGHLIGHT")
+    hover:SetAllPoints()
+    hover:SetColorTexture(ns.Skin.accent[1], ns.Skin.accent[2], ns.Skin.accent[3], 0.12)
     h:SetScript("OnClick", function()
       state.sortBy = col[1]
       refilter()

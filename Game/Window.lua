@@ -9,15 +9,17 @@ local L, Fit, Rows, Activities, Whispers, Search =
 local Window = {}
 ns.Window = Window
 
-local ROW_HEIGHT, VISIBLE_ROWS = 24, 14
-local WIDTH, HEIGHT = 860, 500
+-- Rows are 48px high with 30px member icons: 24px rows were unreadable in
+-- game (user, 2026-11-17). The window grew to keep 9 rows and 5 members.
+local ROW_HEIGHT, VISIBLE_ROWS = 48, 9
+local WIDTH, HEIGHT = 980, 620
 local LEFT_WIDTH = 210
 
 -- Column x positions and widths inside a result row (row width 610). Rows
 -- and headers both use this, so they always line up.
 local COL = {
-  activity = { 4, 132 }, leader = { 140, 104 }, members = { 248, 124 }, count = { 338, 34 },
-  open = { 376, 62 }, age = { 442, 60 }, whisper = { 538, 70 },
+  activity = { 6, 150 }, leader = { 162, 124 }, members = { 292, 166 }, count = { 464, 40 },
+  open = { 508, 74 }, age = { 588, 54 }, whisper = { 648, 80 },
 }
 
 local frame
@@ -41,6 +43,32 @@ local function whisperStore()
   local db = charDB()
   db.whispers = type(db.whispers) == "table" and db.whispers or {}
   return db.whispers
+end
+
+local function inviteStore()
+  local db = charDB()
+  db.invites = type(db.invites) == "table" and db.invites or {}
+  return db.invites
+end
+
+-- Members are drawn as 30px class icons with a role badge in the corner
+-- (user, 2026-11-17: 16px icons with 10px portrait badges were unreadable;
+-- role-only icons were tried and dropped). The badge uses the plain role
+-- icons as the retail UI cuts them (67px cells on a 256px texture); the
+-- client's own GetTexCoordsForRole wins. No role: no badge, greyed icon.
+local ROLE_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-ROLES"
+local ROLE_GRID = { TANK = { 1, 2 }, HEALER = { 2, 1 }, DAMAGER = { 2, 2 } }
+local CLASS_TEXTURE = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
+local MEMBER_SIZE, MEMBER_STEP, BADGE_SIZE = 30, 33, 16
+
+local function roleCoords(role)
+  if not ROLE_GRID[role] then return nil end
+  if type(GetTexCoordsForRole) == "function" then
+    local ok, l, r, t, b = pcall(GetTexCoordsForRole, role)
+    if ok and l then return l, r, t, b end
+  end
+  local x, y, cell = ROLE_GRID[role][1], ROLE_GRID[role][2], 67 / 256
+  return (x - 1) * cell, x * cell, (y - 1) * cell, y * cell
 end
 
 local function suitedOnly()
@@ -85,6 +113,7 @@ end
 local function updateRows()
   if not frame then return end
   local now = time()
+  local recruiting = ns.Recruiting()
   for i = 1, VISIBLE_ROWS do
     local row = rowFrames[i]
     local data = state.shown[i + state.offset]
@@ -93,30 +122,53 @@ local function updateRows()
     else
       row.data = data
       row.activity:SetText(data.activity)
+      -- The latest of a whisper or an invite tags the row.
       local sentAt = data.leader and Whispers.SentAt(whisperStore(), data.leader, now)
+      local invitedAt = data.leader and Whispers.SentAt(inviteStore(), data.leader, now)
+      local tag
+      if invitedAt and (not sentAt or invitedAt >= sentAt) then
+        tag = Whispers.Label(invitedAt, now, "invite")
+      elseif sentAt then
+        tag = Whispers.Label(sentAt, now)
+      end
       local leader = data.leader or "?"
       row.leader:SetText(leader)
-      row.tag:SetText(sentAt and Whispers.Label(sentAt, now) or "")
+      row.tag:SetText(tag or "")
       for k = 1, 5 do
-        local m, icon = data.members[k], row.classes[k]
+        local m, icon, badge = data.members[k], row.classes[k], row.badges[k]
         if m then
           local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[m.classFilename]
           if coords then
-            icon:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
+            icon:SetTexture(CLASS_TEXTURE)
             icon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
-            icon:SetVertexColor(1, 1, 1)
           else
             icon:SetColorTexture(classColor(m.classFilename))
           end
+          local l, r, t, b = roleCoords(m.role)
+          icon:SetDesaturated(l == nil)
+          if l then
+            badge:SetTexture(ROLE_TEXTURE)
+            badge:SetTexCoord(l, r, t, b)
+            badge:Show()
+          else
+            badge:Hide()
+          end
+          badge.role = l and m.role or nil
           icon:Show()
         else
+          badge.role = nil
           icon:Hide()
+          badge:Hide()
         end
       end
       row.count:SetText(("%d/%d"):format(data.listing.numMembers, data.listing.maxMembers))
+      -- Recruiting: the other listing's open spots don't matter; solo
+      -- players can be invited, groups only whispered (docs/adr/0006).
       row.open:SetText(Rows.OpenText(Fit.OpenSpots(data.listing, ns.Settings())))
+      row.open:SetShown(not recruiting)
+      row.invite:SetShown(recruiting and data.listing.numMembers == 1)
       row.age:SetText(Rows.AgeText(data.age))
-      row:SetAlpha(sentAt and 0.6 or 1)
+      row:SetAlpha(tag and 0.6 or 1)
       row:Show()
     end
   end
@@ -133,10 +185,15 @@ end
 local function refilter()
   if not frame then return end
   local want, settings = ns.CurrentWant(), ns.Settings()
+  -- Recruiting: our own listing would match itself.
+  local ours = want.mode == "recruit" and ns.PartyNames() or {}
   local shown = {}
   for _, r in ipairs(state.rows) do
-    if Fit.Evaluate(r.listing, want, settings) then shown[#shown + 1] = r end
+    if not ours[Whispers.Key(r.leader) or ""] and Fit.Evaluate(r.listing, want, settings) then
+      shown[#shown + 1] = r
+    end
   end
+  if frame.openHeader then frame.openHeader:SetShown(want.mode ~= "recruit") end
   Rows.Sort(shown, state.sortBy)
   state.shown = shown
   state.offset = math.max(0, math.min(state.offset, #shown - VISIBLE_ROWS))
@@ -175,7 +232,7 @@ local function buildRow(parent, i)
   hover:SetColorTexture(ns.Skin.accent[1], ns.Skin.accent[2], ns.Skin.accent[3], 0.12)
 
   local function text(x, width, font)
-    local fs = row:CreateFontString(nil, "ARTWORK", font or "GameFontHighlightSmall")
+    local fs = row:CreateFontString(nil, "ARTWORK", font or "GameFontHighlight")
     fs:SetPoint("LEFT", row, "LEFT", x, 0)
     fs:SetWidth(width)
     fs:SetJustifyH("LEFT")
@@ -184,25 +241,53 @@ local function buildRow(parent, i)
   end
   row.activity = text(COL.activity[1], COL.activity[2])
   row.leader = text(COL.leader[1], COL.leader[2])
-  row.tag = text(COL.leader[1], COL.leader[2], "GameFontGreenSmall")
+  row.tag = text(COL.leader[1], COL.leader[2], "GameFontGreen")
   row.tag:ClearAllPoints()
-  row.tag:SetPoint("LEFT", row, "LEFT", COL.leader[1], -6)
+  row.tag:SetPoint("LEFT", row, "LEFT", COL.leader[1], -10)
   row.leader:ClearAllPoints()
-  row.leader:SetPoint("LEFT", row, "LEFT", COL.leader[1], 4)
-  row.classes = {}
+  row.leader:SetPoint("LEFT", row, "LEFT", COL.leader[1], 8)
+  -- Per member: a class icon with a role badge on its bottom-right corner.
+  row.classes, row.badges = {}, {}
   for k = 1, 5 do
     local icon = row:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(16, 16)
-    icon:SetPoint("LEFT", row, "LEFT", COL.members[1] + (k - 1) * 17, 0)
+    icon:SetSize(MEMBER_SIZE, MEMBER_SIZE)
+    icon:SetPoint("LEFT", row, "LEFT", COL.members[1] + (k - 1) * MEMBER_STEP, 0)
     row.classes[k] = icon
+    local badge = row:CreateTexture(nil, "OVERLAY")
+    badge:SetSize(BADGE_SIZE, BADGE_SIZE)
+    badge:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 3, -3)
+    badge:Hide()
+    row.badges[k] = badge
   end
   row.count = text(COL.count[1], COL.count[2])
   row.open = text(COL.open[1], COL.open[2])
   row.age = text(COL.age[1], COL.age[2])
 
-  row.whisper = button(row, L.WHISPER, COL.whisper[2], 20)
+  row.whisper = button(row, L.WHISPER, COL.whisper[2], 28)
   row.whisper:SetPoint("LEFT", row, "LEFT", COL.whisper[1], 0)
   row.whisper:SetScript("OnClick", function() Search.Whisper(row.data and row.data.leader) end)
+  row.whisper:SetScript("OnEnter", function(self)
+    -- Recruiting a pair or trio: their leader is in a group already.
+    if ns.Recruiting() and row.data and row.data.listing.numMembers > 1 then
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:SetText(L.WHISPER)
+      GameTooltip:AddLine(L.INVITE_GROUP_TIP, 1, 1, 1, true)
+      GameTooltip:Show()
+    end
+  end)
+  row.whisper:SetScript("OnLeave", function() GameTooltip:Hide() end)
+
+  -- Recruiting: invite a solo player. Shown in the Open spots column's place.
+  row.invite = button(row, L.INVITE, COL.open[2], 28)
+  row.invite:SetPoint("LEFT", row, "LEFT", COL.open[1], 0)
+  row.invite:SetScript("OnClick", function()
+    local name = row.data and row.data.leader
+    if name and Search.Invite(name) then
+      Whispers.Record(inviteStore(), name, time())
+      updateRows()
+    end
+  end)
+  row.invite:Hide()
 
   row:SetScript("OnEnter", showMembers)
   row:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -251,10 +336,14 @@ end
 local function updateRoleButtons()
   if not frame then return end
   local want = ns.CurrentWant()
+  frame.filterLabel:SetText(want.mode == "recruit" and L.NEED_LABEL or L.FILTER_LABEL)
   for _, role in ipairs(Fit.ROLES) do
     local b = roleButtons[role]
     local on
-    if want.mode == "party" then
+    if want.mode == "recruit" then
+      b:SetText(("%s %d"):format(L[role], want.needs[role] or 0))
+      on = (want.needs[role] or 0) > 0
+    elseif want.mode == "party" then
       b:SetText(("%s %d"):format(L[role], want.counts[role] or 0))
       on = (want.counts[role] or 0) > 0
     else
@@ -268,7 +357,7 @@ end
 
 local function onRoleClick(role, mouse)
   if ns.PartySize() > 1 then
-    ns.Selection.Adjust(ns.selection, role, mouse == "RightButton" and -1 or 1)
+    ns.Selection.Adjust(ns.selection, role, mouse == "RightButton" and -1 or 1, ns.Recruiting())
   else
     ns.Selection.Toggle(ns.selection, role)
     ns.SaveSelection()
@@ -391,6 +480,7 @@ local function build()
   label:SetPoint("TOPLEFT", frame, "TOPLEFT", right, -62)
   label:SetText(L.FILTER_LABEL)
   label:SetTextColor(unpack(ns.Skin.accent))
+  frame.filterLabel = label
   prev = label
   for _, role in ipairs(Fit.ROLES) do
     local b = button(frame, L[role], 76, 22)
@@ -400,7 +490,8 @@ local function build()
     b:SetScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:SetText(L[role])
-      GameTooltip:AddLine(ns.PartySize() > 1 and L.TIP_PARTY or L.TIP_SOLO, 1, 1, 1, true)
+      local tip = ns.Recruiting() and L.TIP_RECRUIT or ns.PartySize() > 1 and L.TIP_PARTY or L.TIP_SOLO
+      GameTooltip:AddLine(tip, 1, 1, 1, true)
       GameTooltip:Show()
     end)
     b:SetScript("OnLeave", function() GameTooltip:Hide() end)
@@ -449,6 +540,7 @@ local function build()
       refilter()
     end)
     headers[#headers + 1] = h
+    if col[1] == "fit" then frame.openHeader = h end
   end
   for i = 1, VISIBLE_ROWS do rowFrames[i] = buildRow(list, i) end
   frame.empty = list:CreateFontString(nil, "ARTWORK", "GameFontDisable")

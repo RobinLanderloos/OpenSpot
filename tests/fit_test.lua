@@ -105,3 +105,45 @@ end)
 test("party with all counts zero doesn't filter", function()
   eq(Fit.Evaluate(dungeon(1, 1, 3), party(0, 0, 0, 2)), true)
 end)
+
+-- Issue 016: recruiting for a listed party (docs/adr/0006).
+local function recruit(t, h, d, free)
+  return { mode = "recruit", needs = { TANK = t, HEALER = h, DAMAGER = d }, free = free }
+end
+
+test("recruit: a solo DPS fits when we need DPS", function()
+  eq(Fit.Evaluate(dungeon(0, 0, 1), recruit(0, 0, 3, 3)), true)
+end)
+
+test("recruit: a solo healer doesn't fit when we need only DPS", function()
+  eq(Fit.Evaluate(dungeon(0, 1, 0), recruit(0, 0, 3, 3)), false)
+end)
+
+test("recruit: pairs and trios fit when every member fills a need", function()
+  eq(Fit.Evaluate(dungeon(0, 0, 2), recruit(0, 0, 3, 3)), true, "dps pair")
+  eq(Fit.Evaluate(dungeon(0, 0, 3), recruit(0, 0, 3, 3)), true, "dps trio")
+  eq(Fit.Evaluate(dungeon(0, 1, 1), recruit(0, 0, 3, 3)), false, "dps + healer")
+end)
+
+test("recruit: too many of a role doesn't fit", function()
+  eq(Fit.Evaluate(dungeon(0, 0, 2), recruit(1, 0, 1, 2)), false)
+end)
+
+test("recruit: a listing bigger than our free slots doesn't fit", function()
+  eq(Fit.Evaluate(dungeon(0, 0, 3), recruit(5, 5, 5, 2)), false)
+end)
+
+test("recruit: listing members without a role count as DPS", function()
+  eq(Fit.Evaluate(dungeon(0, 0, 0, 1), recruit(0, 0, 1, 1)), true, "dps needed")
+  eq(Fit.Evaluate(dungeon(0, 0, 0, 1), recruit(0, 1, 0, 1)), false, "only healer needed")
+end)
+
+test("recruit: nothing needed filters nothing", function()
+  eq(Fit.IsActive(recruit(0, 0, 0, 0)), false)
+  eq(Fit.Evaluate(dungeon(1, 1, 3), recruit(0, 0, 0, 0)), true)
+end)
+
+test("recruit: delisted listings are hidden", function()
+  local l = dungeon(0, 0, 1); l.delisted = true
+  eq(Fit.Evaluate(l, recruit(0, 0, 3, 3)), false)
+end)

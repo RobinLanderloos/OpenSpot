@@ -126,7 +126,14 @@ local RESULTS = {
   [4] = { 799, 5, { 1, 1, 3, 0 } }, -- full
   [5] = { 799, 1, { 0, 0, 1, 0 } }, -- one member: judged like a group
   [6] = { 900, 15, { 2, 4, 9, 0 } }, -- 40-player listing with room
+  -- Added for recruiting (issue 016):
+  [7] = { 799, 1, { 0, 0, 0, 1 } }, -- solo player without a role
+  [8] = { 799, 2, { 0, 0, 2, 0 } }, -- DPS pair
+  [9] = { 799, 1, { 0, 0, 1, 0 }, "Me" }, -- the player's own listing
+  [10] = { 799, 1, { 0, 1, 0, 0 } }, -- solo healer
 }
+local resultIDs = { 1, 2, 3, 4, 5, 6 }
+local listed -- activity of the player's own listing
 local ACTIVITIES = {
   [798] = { fullName = "Ragefire Chasm", maxNumPlayers = 5, categoryID = 2, minLevelSuggestion = 10, maxLevelSuggestion = 16 },
   [799] = { fullName = "Deadmines", maxNumPlayers = 5, categoryID = 2, minLevelSuggestion = 17, maxLevelSuggestion = 26 },
@@ -140,23 +147,30 @@ _G.C_LFGList = {
   GetAvailableActivities = function(cat) if cat == 2 then return { 800, 798, 799, 900 } end return {} end,
   GetActivityInfoTable = function(id) return ACTIVITIES[id] end,
   Search = function(category, _, _, _, _, _, ids) searched = { category = category, ids = table.concat(ids, ",") } end,
-  GetSearchResults = function() return 6, { 1, 2, 3, 4, 5, 6 } end,
+  GetSearchResults = function() return #resultIDs, resultIDs end,
   GetSearchResultInfo = function(id)
     local r = RESULTS[id]
-    return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2], leaderName = "Leader" .. id, age = id * 10 }
+    return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2], leaderName = r[4] or ("Leader" .. id), age = id * 10 }
   end,
   GetSearchResultMemberCounts = function(id)
     local c = RESULTS[id][3]; return { TANK = c[1], HEALER = c[2], DAMAGER = c[3], NOROLE = c[4] }
   end,
   GetSearchResultPlayerInfo = function(id, i)
     if i > RESULTS[id][2] then return nil end
-    return { name = i == 1 and ("Leader" .. id) or ("Member" .. id .. "-" .. i), classFilename = "MAGE",
-      className = "Mage", assignedRole = "DAMAGER", level = 20, isLeader = i == 1 }
+    -- Roles in count order: tanks, healers, DPS, then members without one.
+    local c, role, n = RESULTS[id][3], nil, i
+    for k, r in ipairs({ "TANK", "HEALER", "DAMAGER", "NONE" }) do
+      if not role and n <= c[k] then role = r elseif not role then n = n - c[k] end
+    end
+    return { name = i == 1 and (RESULTS[id][4] or ("Leader" .. id)) or ("Member" .. id .. "-" .. i), classFilename = "MAGE",
+      className = "Mage", assignedRole = role, level = 20, isLeader = i == 1 }
   end,
   GetAvailableRoles = function() return true, false, true end,
   ApplyToGroup = function(id, t, h, d) applied[id] = { t, h, d } end,
   GetApplicationInfo = function(id) return id, applied[id] and "applied" or "none", "none" end,
-  GetFilteredSearchResults = function() return 6, { 1, 2, 3, 4, 5, 6 } end,
+  GetFilteredSearchResults = function() return #resultIDs, resultIDs end,
+  HasActiveEntryInfo = function() return listed ~= nil end,
+  GetActiveEntryInfo = function() return listed and { activityIDs = { listed } } end,
 }
 
 -- Group state the tests change.
@@ -165,7 +179,11 @@ _G.UnitLevel = function() return 20 end
 _G.IsInGroup = function() return group.size > 1 end
 _G.IsInRaid = function() return false end
 _G.GetNumGroupMembers = function() return group.size > 1 and group.size or 0 end
-_G.UnitExists = function(unit) local i = tonumber(unit:match("%d+")); return i and i < group.size end
+_G.UnitExists = function(unit)
+  if unit == "player" then return true end
+  local i = tonumber(unit:match("%d+")); return i and i < group.size
+end
+_G.UnitName = function(unit) return unit == "player" and "Me" or ("Friend" .. (unit:match("%d+") or "")) end
 _G.UnitGroupRolesAssigned = function(unit)
   if unit == "player" then return group.roles[1] or "NONE" end
   return group.roles[(tonumber(unit:match("%d+")) or 0) + 1] or "NONE"
@@ -184,7 +202,11 @@ _G.HideUIPanel = function(f) f:Hide() end
 _G.ShowUIPanel = function(f) f:Show() end
 _G.ToggleGroupFinderFrame = function() if blizz.shown then blizz:Hide() else blizz:Show() end end
 local inviteRequests = {}
-_G.C_PartyInfo = { RequestInviteFromUnit = function(name) inviteRequests[#inviteRequests + 1] = name end }
+local invited = {}
+_G.C_PartyInfo = {
+  RequestInviteFromUnit = function(name) inviteRequests[#inviteRequests + 1] = name end,
+  InviteUnit = function(name) invited[#invited + 1] = name end,
+}
 local told
 _G.ChatFrame_SendTell = function(name) told = name end
 
@@ -350,6 +372,54 @@ check("Blizzard window button opens it next to ours", blizz.shown == true and wi
 ToggleGroupFinderFrame()
 check("and closing it closes both", blizz.shown == false and window().shown == false)
 slash("OPENSPOT", "")
+
+-- Class icons with a role badge (issue 015).
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+check("a DPS member: class icon with a DPS badge", rowFor(5) and visible(rowFor(5).classes[1])
+  and visible(rowFor(5).badges[1]) and rawget(rowFor(5).badges[1], "role") == "DAMAGER")
+check("empty member slots are hidden", rowFor(5) and not visible(rowFor(5).classes[2]) and not visible(rowFor(5).badges[2]))
+
+-- Recruiting (issues 016-019, docs/adr/0006): tank + healer, listed for
+-- Shadowfang Keep.
+OpenSpotCharDB.activities = { [799] = true }
+resultIDs = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }
+group.size, group.roles = 2, { "TANK", "HEALER" }
+fire("GROUP_ROSTER_UPDATE")
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+check("unlisted party still looks for groups", buttonText("Tank 1") ~= nil and shownTexts():find("Open spot for:", 1, true), shownTexts())
+listed = 800
+fire("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+check("listed party: buttons show needs", buttonText("DPS 3") ~= nil and buttonText("Tank 0") ~= nil, shownTexts())
+check("labelled Looking for", shownTexts():find("Looking for:", 1, true) ~= nil, shownTexts())
+check("listed activity ticked, other ticks kept",
+  OpenSpotCharDB.activities[800] == true and OpenSpotCharDB.activities[799] == true)
+check("players who fill our needs: solo DPS, roleless solo, DPS pair; own listing hidden",
+  shownIDs() == "5,7,8", shownIDs())
+check("recruit summary", shownTexts():find("Recruiting: 3 DPS · Showing 3 of 10", 1, true) ~= nil, shownTexts())
+check("roleless member: class icon, no badge", visible(rowFor(7).classes[1]) and not visible(rowFor(7).badges[1]))
+check("Open spots column hidden", not visible(rowFor(5).open))
+check("Invite on solo listings", visible(rowFor(5).invite) and visible(rowFor(7).invite))
+check("no Invite on a pair", not visible(rowFor(8).invite))
+click(rowFor(5).invite)
+check("Invite invites the leader", invited[1] == "Leader5", invited[1])
+check("invited row tagged and dimmed", rowFor(5).tag.text == "Invited <1m" and rawget(rowFor(5), "alpha") == 0.6,
+  rowFor(5).tag.text)
+check("invites saved per character", OpenSpotCharDB.invites.leader5 ~= nil)
+click(buttonText("DPS 3"), "RightButton")
+check("needs adjusted by hand", buttonText("DPS 2") ~= nil and shownIDs() == "5,7,8", shownIDs())
+click(buttonText("DPS 2"), "RightButton")
+check("one DPS needed: the pair no longer fits", shownIDs() == "5,7", shownIDs())
+click(buttonText("DPS 1"), "RightButton")
+check("nothing needed: group full, nothing filtered but our own listing",
+  shownTexts():find("Your group is full", 1, true) and shownIDs() == "1,2,3,4,5,6,7,8,10", shownIDs())
+listed = nil
+fire("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+check("delisting goes back to looking for a group", buttonText("Tank 1") ~= nil and visible(rowFor(5).open),
+  shownTexts())
+group.size, group.roles = 1, {}
+fire("GROUP_ROSTER_UPDATE")
+resultIDs = { 1, 2, 3, 4, 5, 6 }
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 
 ns.db.template.HEALER = 2
 ns.Changed()

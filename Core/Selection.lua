@@ -14,6 +14,10 @@ function Selection.New(saved)
     solo = {},
     party = { TANK = 0, HEALER = 0, DAMAGER = 0 },
     partyKey = nil, -- the party's roles the counts were last filled from
+    -- What a listed party still needs (docs/adr/0006).
+    recruit = { TANK = 0, HEALER = 0, DAMAGER = 0 },
+    recruitFree = 0,
+    recruitKey = nil,
   }
   for _, role in ipairs(ROLES) do state.solo[role] = solo[role] == true end
   return state
@@ -46,13 +50,50 @@ function Selection.SetPartyRoles(state, roles)
   return true
 end
 
-function Selection.Adjust(state, role, delta)
-  state.party[role] = math.max(0, state.party[role] + delta)
+-- roles: as for SetPartyRoles. target = { template = { TANK = n, ... } or
+-- nil, maxMembers = n } for the listed activity; without a template any role
+-- may fill any free slot. Party members without a role count as DPS. Re-fills
+-- only when something changed, so a hand adjustment survives.
+function Selection.SetRecruit(state, roles, target)
+  local sorted = {}
+  for i, role in ipairs(roles) do sorted[i] = role end
+  table.sort(sorted)
+  local template = target.template
+  local key = table.concat(sorted, ",") .. "|" .. tostring(target.maxMembers) .. "|"
+    .. (template and (template.TANK .. "," .. template.HEALER .. "," .. template.DAMAGER) or "-")
+  if key == state.recruitKey then return false end
+  state.recruitKey = key
+  local free = math.max(0, (target.maxMembers or 5) - #roles)
+  state.recruitFree = free
+  local have = { TANK = 0, HEALER = 0, DAMAGER = 0 }
+  for _, role in ipairs(roles) do
+    local r = have[role] and role or "DAMAGER"
+    have[r] = have[r] + 1
+  end
+  for _, role in ipairs(ROLES) do
+    if template then
+      state.recruit[role] = math.min(free, math.max(0, (template[role] or 0) - have[role]))
+    else
+      state.recruit[role] = free
+    end
+  end
+  return true
+end
+
+-- recruiting: adjust the needs of a listed party instead of the join counts.
+function Selection.Adjust(state, role, delta, recruiting)
+  local t = recruiting and state.recruit or state.party
+  t[role] = math.max(0, t[role] + delta)
 end
 
 -- The `want` table Fit.Evaluate takes. partySize is the number of people in
--- the player's group (1 when solo).
-function Selection.Want(state, partySize)
+-- the player's group (1 when solo); recruiting: the party has its own listing.
+function Selection.Want(state, partySize, recruiting)
+  if (partySize or 1) > 1 and recruiting then
+    local needs = {}
+    for _, role in ipairs(ROLES) do needs[role] = state.recruit[role] end
+    return { mode = "recruit", needs = needs, free = state.recruitFree }
+  end
   if (partySize or 1) > 1 then
     local counts = {}
     for _, role in ipairs(ROLES) do counts[role] = state.party[role] end

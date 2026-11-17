@@ -43,3 +43,8 @@ test("label shows minutes since sending", function()
   eq(Whispers.Label(1000, 1000 + 180), "Whispered 3m")
   eq(Whispers.Label(1000, 1000 + 3599), "Whispered 59m")
 end)
+
+test("an invite gets its own label", function()
+  eq(Whispers.Label(1000, 1000, "invite"), "Invited <1m")
+  eq(Whispers.Label(1000, 1150, "invite"), "Invited 2m")
+end)

@@ -8,8 +8,16 @@ local ROLES = { "TANK", "HEALER", "DAMAGER" }
 
 -- Returns nil when nothing is being filtered (the line is hidden then).
 function Summary.Text(shown, total, want)
-  if not ns.Fit.IsActive(want) then return nil end
   local L, parts = ns.L, {}
+  if want.mode == "recruit" then
+    if not ns.Fit.IsActive(want) then return L.GROUP_FULL end
+    for _, role in ipairs(ROLES) do
+      local n = want.needs[role] or 0
+      if n > 0 then parts[#parts + 1] = n .. " " .. L[role] end
+    end
+    return L.RECRUITING:format(table.concat(parts, ", "), shown, total)
+  end
+  if not ns.Fit.IsActive(want) then return nil end
   if want.mode == "party" then
     for _, role in ipairs(ROLES) do
       local n = want.counts[role] or 0

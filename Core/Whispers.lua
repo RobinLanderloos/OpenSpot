@@ -32,8 +32,14 @@ function Whispers.Prune(store, now)
   end
 end
 
-function Whispers.Label(sentAt, now)
+-- kind: "invite" for players invited while recruiting, else a whisper.
+function Whispers.Label(sentAt, now, kind)
+  local L = ns.L
   local minutes = math.floor((now - sentAt) / 60)
-  if minutes < 1 then return ns.L.SENT_NOW end
-  return ns.L.SENT_MINUTES:format(minutes)
+  if kind == "invite" then
+    if minutes < 1 then return L.INVITED_NOW end
+    return L.INVITED_MINUTES:format(minutes)
+  end
+  if minutes < 1 then return L.SENT_NOW end
+  return L.SENT_MINUTES:format(minutes)
 end

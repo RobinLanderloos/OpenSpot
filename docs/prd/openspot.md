@@ -66,7 +66,7 @@ OpenSpot adds Tank / Healer / DPS toggles to the Browse tab. I tick the open spo
 ## Out of Scope
 
 - Excluding groups that contain specific classes (v2).
-- Player finder: filtering single-player listings by class and role when building your own group (v2).
+- Player finder: filtering by class when building your own group (v2). Filtering by role while recruiting is v0.4 below.
 - Our own browser window.
 - Per-dungeon templates, raid role templates.
 - Publishing to WowUp Hub / CurseForge (later decision; repo private).
@@ -107,3 +107,35 @@ Blizzard's Browse rows can't be changed reliably from an addon: the message butt
 - Game: Window (frame, tabs, checklist, result rows we draw), Search (C_LFGList.Search + LFG_LIST_SEARCH_RESULTS_RECEIVED/UPDATED), Toggle (redirect the Looking For Group toggle), Probe (`/openspot debug` additions to verify the client).
 - The v1 Browse-tab hook is removed once the window works.
 - Not published until everything works in game (user's decision, 2026-11-17).
+
+---
+
+# v0.4: recruiting for a listed party, member roles at a glance (ADR 0006)
+
+## Problem
+
+In a party, OpenSpot only finds groups with room for all of us. When we are forming a group ourselves it doesn't help find the players we still need, and the count buttons show what the party *is*, with nothing saying so. Rows also look the same whatever role a player has: a solo tank warrior and a solo DPS warrior are only told apart by hovering.
+
+## User stories
+
+43. As a player, I want each member's class icon to carry a readable role badge (shield, cross, sword; no badge and a greyed icon for no role), so that I see who plays what without hovering.
+44. As a party leader with a listed group, I want OpenSpot to switch to recruiting on its own, so that I find players for my group without a mode switch.
+45. As a player in an unlisted party, I want OpenSpot to keep finding groups with room for all of us, so that my duo can still join others.
+46. As a recruiting leader, I want the role buttons to show what we need (template minus our roles, roleless members as DPS), labelled "Looking for", so that the numbers mean one thing.
+47. As a recruiting leader, I want to adjust the needs by hand, so that I can ask for a second healer.
+48. As a recruiting leader, I want listings shown only when every member fills a missing spot, pairs and trios included, so that I see people who actually fit.
+49. As a recruiting leader, I want my listing's activity ticked when recruiting starts (added to my ticks), so that the first search finds people for our dungeon.
+50. As a recruiting leader, I want my own listing hidden.
+51. As a recruiting leader, I want listings that fill the most of our needs first, then the newest.
+52. As a recruiting leader, I want an Invite button on solo listings, and Whisper only on pairs and trios (tooltip: "Already a group: whisper to arrange"), because a player in a group can't be invited.
+53. As a recruiting leader, I want invited players tagged "Invited 2m" and dimmed like whispered ones, so that I don't invite twice.
+54. As a recruiting leader, I want the summary to read "Recruiting: 3 DPS · Showing 4 of 22", or "Your group is full" with nothing filtered when nothing is needed.
+
+## Implementation decisions
+
+- Core/Selection: a recruit mode whose counts are filled from template minus party roles (NONE adds a DPS), adjustable as party counts are today.
+- Core/Fit: `want = { mode = "recruit", needs = { TANK = n, ... }, free = n }`; a listing fits when each role count (NOROLE as DPS) is within needs and numMembers <= free. No needs = everything fits.
+- Core/Rows: recruit sort (members filling needs, desc, then age); no Open column in recruit mode.
+- Core/Summary: "Recruiting: ..." and "Your group is full" texts.
+- Core/Whispers: also keeps invite times ("Invited" tag), same 1-hour expiry.
+- Game: own listing via `C_LFGList.HasActiveEntryInfo` / `GetActiveEntryInfo` (activity, own result to hide), re-checked on `LFG_LIST_ACTIVE_ENTRY_UPDATE`; Invite via `C_PartyInfo.InviteUnit` or `InviteUnit`, verified in game first (`/openspot probe`); role badges on member icons from the member info the tooltip already reads.

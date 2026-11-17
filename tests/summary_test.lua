@@ -17,3 +17,13 @@ end)
 test("no filter shows nothing", function()
   eq(Summary.Text(23, 23, solo(false, false, false)), nil)
 end)
+
+test("recruit summary names the needs", function()
+  local want = { mode = "recruit", free = 3, needs = { TANK = 0, HEALER = 1, DAMAGER = 2 } }
+  eq(Summary.Text(4, 22, want), "Recruiting: 1 Healer, 2 DPS · Showing 4 of 22")
+end)
+
+test("recruit summary with nothing needed says the group is full", function()
+  local want = { mode = "recruit", free = 0, needs = { TANK = 0, HEALER = 0, DAMAGER = 0 } }
+  eq(Summary.Text(22, 22, want), "Your group is full")
+end)

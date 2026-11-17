@@ -38,3 +38,16 @@ end)
 test("open spots text per role", function()
   eq(Rows.OpenText({ TANK = 0, HEALER = 1, DAMAGER = 2 }), "T0 H1 D2")
 end)
+
+-- Issue 018: while recruiting every shown member fills a need, so the default
+-- order puts the listing filling the most needs first, then the newest.
+test("recruit order: a DPS trio before a pair before solo players", function()
+  local rows = {
+    { id = 1, listing = listing(0, 0, 1), age = 10 },
+    { id = 2, listing = listing(0, 0, 3), age = 300 },
+    { id = 3, listing = listing(0, 0, 2), age = 60 },
+    { id = 4, listing = listing(0, 0, 1), age = 5 },
+  }
+  Rows.Sort(rows)
+  eq(rows[1].id .. rows[2].id .. rows[3].id .. rows[4].id, "2341")
+end)

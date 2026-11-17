@@ -39,5 +39,13 @@ ns.L = {
   TEMPLATE_HELP = "How many of each role a dungeon group wants. Open spots are this minus the members who already have that role; members without a role count as DPS.",
   DEBUG_DONE = "Report saved. Type /reload to write it to disk.",
   DEBUG_NO_RESULTS = "No search results. Open the Looking For Group window and search first.",
+  RECRUITING = "Recruiting: %s · Showing %d of %d",
+  GROUP_FULL = "Your group is full",
+  INVITED_NOW = "Invited <1m",
+  INVITED_MINUTES = "Invited %dm",
+  INVITE = "Invite",
+  INVITE_GROUP_TIP = "Already a group: whisper to arrange.",
+  NEED_LABEL = "Looking for:",
+  TIP_RECRUIT = "Your party is listed, so OpenSpot looks for players who fill what you still need. Left-click adds one, right-click removes one.",
   HELP = "/openspot: open the window, /openspot settings, /openspot debug: write a report",
 }

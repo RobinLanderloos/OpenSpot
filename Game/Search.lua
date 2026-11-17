@@ -86,6 +86,17 @@ function Search.Rows()
   return rows
 end
 
+-- Invites a player to the party (recruiting, docs/adr/0006). Returns false
+-- when the client offers no invite call.
+function Search.Invite(name)
+  if not name then return false end
+  local invite = type(C_PartyInfo) == "table" and C_PartyInfo.InviteUnit or _G.InviteUnit
+  if type(invite) ~= "function" then return false end
+  local ok, err = pcall(invite, name)
+  Search.diag.lastInvite = { name = name, ok = ok, err = not ok and tostring(err) or nil }
+  return ok
+end
+
 function Search.Whisper(name)
   if not name then return end
   if type(ChatFrame_SendTell) == "function" then

@@ -32,7 +32,9 @@ end
 -- Is any filtering asked for at all?
 function Fit.IsActive(want)
   for _, role in ipairs(Fit.ROLES) do
-    if want.mode == "party" then
+    if want.mode == "recruit" then
+      if (want.needs[role] or 0) > 0 then return true end
+    elseif want.mode == "party" then
       if (want.counts[role] or 0) > 0 then return true end
     elseif want.roles[role] then
       return true
@@ -44,9 +46,23 @@ end
 -- want = { mode = "solo", roles = { TANK = true, ... } }: any ticked role open.
 -- want = { mode = "party", counts = { TANK = n, ... }, size = n }: every count
 -- open, and room for the whole party (the player is one of `size`).
+-- want = { mode = "recruit", needs = { TANK = n, ... }, free = n }: a listed
+-- party looking for players (docs/adr/0006). Every member of the listing must
+-- fill a missing spot (members without a role count as DPS), and the listing
+-- must fit in our free slots.
 function Fit.Evaluate(listing, want, settings)
   if not Fit.IsActive(want) then return true end
   if listing.delisted then return false end
+  if want.mode == "recruit" then
+    if (listing.numMembers or 0) > (want.free or 0) then return false end
+    local counts = listing.counts or {}
+    for _, role in ipairs(Fit.ROLES) do
+      local have = counts[role] or 0
+      if role == "DAMAGER" then have = have + (counts.NOROLE or 0) end
+      if have > (want.needs[role] or 0) then return false end
+    end
+    return true
+  end
   local open = Fit.OpenSpots(listing, settings)
   if want.mode == "party" then
     if open.free < (want.size or 1) then return false end

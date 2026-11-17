@@ -10,3 +10,7 @@ Supersedes ADR 0001. Filtering inside `LFGBrowseFrame` worked (we swap the resul
 - We own activity picking, search, sorting and row actions, and must keep them working across client patches.
 - Redirecting the Looking For Group toggle hooks a Blizzard function; if that causes errors in game, fall back to opening ours by command/minimap button next to Blizzard's.
 - Searching always needs a click; no auto-refresh.
+
+## Revised 2026-11-17: side by side, not replacing
+
+Taking over every opening of Blizzard's window also swallowed its Who tab (where Forever shows /who results, used by Who's Hiring). The user chose: the Looking For Group key/button opens Blizzard's window as usual, and OpenSpot's window docks to its right. OpenSpot only post-hooks the toggles (`hooksecurefunc` on `ToggleGroupFinderFrame` / `LFGVanilla_ToggleFrame`), so nothing Blizzard's is replaced and other ways of opening Blizzard's window come alone. Closing Blizzard's window closes ours unless it was dragged away; `/openspot` opens ours on its own at its saved position.

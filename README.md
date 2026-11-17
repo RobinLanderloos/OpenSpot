@@ -4,7 +4,7 @@ Made mainly for me and my friends. It's shared in case it's useful to others too
 
 A group finder for WoW Forever that shows only the groups with an open spot for you.
 
-- **Its own window**, opened by the Looking For Group key (`I`) or `/openspot`. A "Blizzard window" button opens the game's own window, e.g. to list your own group. Other things that open the game's window (such as /who results) still get the game's window.
+- **Its own window**, docked to the right of the game's Looking For Group window when you open that with its key (`I`) or button, and closed with it. `/openspot` opens it on its own (drag it anywhere; it remembers where). The "Blizzard window" button opens the game's window next to it.
 - **Category tabs and an activity checklist.** Ticking or unticking a dungeon searches right away (limited to your level by default); **Search** refreshes. Ticks are remembered per character.
 - **Tank / Healer / DPS buttons**: tick the open spots you're looking for; listings without one are hidden. Several ticks: any of them. Nothing ticked: no filtering. A "Showing X of Y" line shows what's hidden.
 - **In a party** the buttons become counts, pre-filled from your party's assigned roles (left-click +1, right-click -1). Groups need every counted spot open and room for the whole party.

@@ -320,15 +320,10 @@ local function build()
   frame:SetScript("OnDragStart", frame.StartMoving)
   frame:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
+    state.docked = false -- moved by hand: no longer follows Blizzard's window
     local point, _, relPoint, x, y = self:GetPoint()
     ns.db.window = { point = point, relPoint = relPoint, x = x, y = y }
   end)
-  local pos = ns.db.window
-  if type(pos) == "table" and pos.point then
-    frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
-  else
-    frame:SetPoint("CENTER")
-  end
   frame:Hide()
   tinsert(UISpecialFrames, "OpenSpotWindow") -- Escape closes it
 
@@ -450,8 +445,8 @@ local function build()
   local blizzard = button(frame, L.BLIZZARD_WINDOW, 150, 22)
   blizzard:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -12, 12)
   blizzard:SetScript("OnClick", function()
-    frame:Hide()
     ns.Toggle.OpenBlizzard()
+    if _G.LFGParentFrame and _G.LFGParentFrame:IsShown() then Window.ShowDocked(_G.LFGParentFrame) end
   end)
   tooltip(blizzard, L.BLIZZARD_WINDOW, L.BLIZZARD_WINDOW_TIP)
   local settings = button(frame, L.SETTINGS, 100, 22)
@@ -473,9 +468,38 @@ local function build()
   end)
 end
 
+-- Where the player last put it (or the centre), when opened on its own.
+local function placeFree()
+  frame:ClearAllPoints()
+  local pos = ns.db.window
+  if type(pos) == "table" and pos.point then
+    frame:SetPoint(pos.point, UIParent, pos.relPoint, pos.x, pos.y)
+  else
+    frame:SetPoint("CENTER")
+  end
+end
+
+-- On its own (/openspot).
 function Window.Toggle()
   if not frame then build() end
-  if frame:IsShown() then frame:Hide() else frame:Show() end
+  if frame:IsShown() then frame:Hide(); return end
+  state.docked = false
+  placeFree()
+  frame:Show()
+end
+
+-- Next to Blizzard's Looking For Group window (opened by its key/button).
+function Window.ShowDocked(anchor)
+  if not frame then build() end
+  state.docked = true
+  frame:ClearAllPoints()
+  frame:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 4, 0)
+  frame:Show()
+end
+
+-- Blizzard's window closed: close ours too, unless the player moved it away.
+function Window.HideDocked()
+  if frame and state.docked then frame:Hide() end
 end
 
 function Window.Frame() return frame end

@@ -110,7 +110,9 @@ _G.Settings = {
 _G.OpenSpotDB = nil
 _G.OpenSpotCharDB = nil
 _G.date = os.date
+-- Like the game: hooksecurefunc([table,] name, fn) runs fn after the original.
 _G.hooksecurefunc = function(t, name, fn)
+  if type(t) == "string" then t, name, fn = _G, t, name end
   local orig = t[name]
   rawset(t, name, function(...) local r = { orig(...) }; fn(...); return unpack(r) end)
 end
@@ -179,6 +181,7 @@ end)
 rawset(blizz, "Hide", function(s) s.shown = false; if s.scripts.OnHide then s.scripts.OnHide(s) end end)
 _G.LFGParentFrame = blizz
 _G.HideUIPanel = function(f) f:Hide() end
+_G.ShowUIPanel = function(f) f:Show() end
 _G.ToggleGroupFinderFrame = function() if blizz.shown then blizz:Hide() else blizz:Show() end end
 local inviteRequests = {}
 _G.C_PartyInfo = { RequestInviteFromUnit = function(name) inviteRequests[#inviteRequests + 1] = name end }
@@ -240,10 +243,13 @@ local function buttonText(prefix)
 end
 local function click(w, mouse) w.scripts.OnClick(w, mouse or "LeftButton") end
 
--- Opening: the Looking For Group key opens ours, not Blizzard's.
+-- Opening: the Looking For Group key opens Blizzard's window with ours docked beside it.
 ToggleGroupFinderFrame()
-check("Looking For Group key opens our window", window() and window().shown, "window not shown")
-check("and Blizzard's window is closed again", blizz.shown == false)
+check("Looking For Group key opens Blizzard's window", blizz.shown == true)
+check("and ours next to it", window() and window().shown, "window not shown")
+local point = window() and rawget(window(), "point")
+check("docked to the right of Blizzard's", point and point[1] == "TOPLEFT" and point[2] == blizz and point[3] == "TOPRIGHT",
+  point and table.concat({ tostring(point[1]), tostring(point[3]) }, " "))
 
 check("category tabs", buttonText("Dungeons") ~= nil and buttonText("Quests & Zones") ~= nil, shownTexts())
 local texts = shownTexts()
@@ -323,20 +329,27 @@ check("column headers are clickable", leaderHeader ~= nil)
 click(leaderHeader)
 check("leader column sorts", rowFor(1) ~= nil)
 
--- Blizzard's window on request.
-click(buttonText("Blizzard window"))
-check("Blizzard window button opens the original", blizz.shown == true)
-check("and closes ours", window().shown == false)
-blizz:Hide()
+-- Closing Blizzard's window closes ours; toggling again opens both.
 ToggleGroupFinderFrame()
-check("afterwards the key opens ours again", window().shown == true and blizz.shown == false)
+check("closing Blizzard's window closes ours", blizz.shown == false and window().shown == false)
+ToggleGroupFinderFrame()
+check("toggling again opens both", blizz.shown == true and window().shown == true)
 
--- Something else (Who results) opening Blizzard's window keeps it.
-window():Hide()
-blizz:Show()
-check("other ways of opening Blizzard's window are left alone", blizz.shown == true and window().shown == false)
+-- Something else (Who results) opening Blizzard's window comes alone.
 blizz:Hide()
+check("ours closed with it", window().shown == false)
+blizz:Show()
+check("other ways of opening Blizzard's window don't open ours", blizz.shown == true and window().shown == false)
+blizz:Hide()
+
+-- On its own (/openspot), and the Blizzard window button docks them.
+slash("OPENSPOT", "")
+check("/openspot opens ours alone", window().shown == true and blizz.shown == false)
+click(buttonText("Blizzard window"))
+check("Blizzard window button opens it next to ours", blizz.shown == true and window().shown == true)
 ToggleGroupFinderFrame()
+check("and closing it closes both", blizz.shown == false and window().shown == false)
+slash("OPENSPOT", "")
 
 ns.db.template.HEALER = 2
 ns.Changed()

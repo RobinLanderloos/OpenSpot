@@ -489,11 +489,27 @@ function Window.Toggle()
 end
 
 -- Next to Blizzard's Looking For Group window (opened by its key/button).
+-- How far Blizzard's window reaches past its right edge: its side tabs
+-- (e.g. "Who List") stick out there. Never less than a fixed gap, in case
+-- the tabs aren't direct children.
+local DOCK_FALLBACK = 40
+local function dockGap(anchor)
+  local right = anchor.GetRight and anchor:GetRight()
+  if not right or not anchor.GetChildren then return DOCK_FALLBACK end
+  local farthest = right
+  for _, child in ipairs({ anchor:GetChildren() }) do
+    local childRight = child.IsShown and child:IsShown() and child.GetRight and child:GetRight()
+    if childRight and childRight > farthest and childRight < right + 200 then farthest = childRight end
+  end
+  Window.dockDiag = { right = right, farthest = farthest }
+  return math.max(DOCK_FALLBACK, math.floor(farthest - right) + 6)
+end
+
 function Window.ShowDocked(anchor)
   if not frame then build() end
   state.docked = true
   frame:ClearAllPoints()
-  frame:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 4, 0)
+  frame:SetPoint("TOPLEFT", anchor, "TOPRIGHT", dockGap(anchor), 0)
   frame:Show()
 end
 

@@ -23,6 +23,7 @@ local function debugReport()
   Report.Add("search: " .. keys(ns.Search.diag.lastSearch or {}) .. " | toggle: " .. keys(ns.Toggle.diag)
     .. " | lastWhisperTarget: " .. tostring(ns.Search.diag.lastWhisperTarget))
   Report.Add("whispers: " .. keys(OpenSpotCharDB.whispers or {}))
+  Report.Add("dock: " .. keys(ns.Window.dockDiag or {}))
   local party = {}
   if type(C_PartyInfo) == "table" then
     for k, v in pairs(C_PartyInfo) do if type(v) == "function" then party[#party + 1] = k end end

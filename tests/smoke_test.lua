@@ -121,7 +121,7 @@ local RESULTS = {
   [2] = { 799, 4, { 1, 1, 2, 0 } }, -- needs dps
   [3] = { 799, 4, { 0, 1, 3, 0 } }, -- needs tank
   [4] = { 799, 5, { 1, 1, 3, 0 } }, -- full
-  [5] = { 799, 1, { 0, 0, 1, 0 } }, -- single player
+  [5] = { 799, 1, { 0, 0, 1, 0 } }, -- one member: judged like a group
   [6] = { 900, 15, { 2, 4, 9, 0 } }, -- raid with room
 }
 _G.C_LFGList = {
@@ -200,31 +200,31 @@ browse:UpdateResultList()
 check("nothing ticked shows everything", drawnIDs() == "1,2,3,4,5,6", drawnIDs())
 
 roleButton("DPS").scripts.OnClick(roleButton("DPS"), "LeftButton")
-check("DPS ticked: dps-needing groups and the raid", drawnIDs() == "1,2,6", drawnIDs())
-check("counter shows", shownTexts():find("Showing 3 of 6 listings (DPS)", 1, true) ~= nil, shownTexts())
+check("DPS ticked: dps-needing groups and the raid", drawnIDs() == "1,2,5,6", drawnIDs())
+check("counter shows", shownTexts():find("Showing 4 of 6 listings (DPS)", 1, true) ~= nil, shownTexts())
 
 browse:UpdateResultList()
-check("a new search is filtered too", drawnIDs() == "1,2,6", drawnIDs())
+check("a new search is filtered too", drawnIDs() == "1,2,5,6", drawnIDs())
 
 roleButton("Tank").scripts.OnClick(roleButton("Tank"), "LeftButton")
-check("Tank + DPS", drawnIDs() == "1,2,3,6", drawnIDs())
+check("Tank + DPS", drawnIDs() == "1,2,3,5,6", drawnIDs())
 check("ticks saved per character", OpenSpotCharDB.selection.solo.TANK == true)
 
 -- Party of 2: tank + dps.
 group.size, group.roles = 2, { "TANK", "DAMAGER" }
 fire("GROUP_ROSTER_UPDATE")
-check("party: needs tank and dps open plus 2 free", drawnIDs() == "6", drawnIDs())
+check("party: needs tank and dps open plus 2 free", drawnIDs() == "5,6", drawnIDs())
 check("party button shows count", roleButton("Tank") and roleButton("Tank").text == "Tank 1", roleButton("Tank") and roleButton("Tank").text)
 roleButton("Tank").scripts.OnClick(roleButton("Tank"), "RightButton")
-check("right-click lowers the count", drawnIDs() == "1,6", drawnIDs())
+check("right-click lowers the count", drawnIDs() == "1,5,6", drawnIDs())
 
 group.size, group.roles = 1, {}
 fire("GROUP_ROSTER_UPDATE")
-check("solo ticks are back after leaving", drawnIDs() == "1,2,3,6", drawnIDs())
+check("solo ticks are back after leaving", drawnIDs() == "1,2,3,5,6", drawnIDs())
 
 ns.db.template.HEALER = 2
 ns.Changed()
-check("template change re-filters", drawnIDs() == "1,2,3,6", drawnIDs())
+check("template change re-filters", drawnIDs() == "1,2,3,5,6", drawnIDs())
 
 local ok, out = slash("OPENSPOT", "debug")
 check("/openspot debug runs", ok, out)

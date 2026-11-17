@@ -53,8 +53,9 @@ local function debugReport()
       local activity = info and ns.Listing.ActivityInfo(info)
       local listing = ns.Listing.FromResult(id)
       local fit = listing and ns.Fit.Evaluate(listing, want, ns.Settings())
-      Report.Add(("#%d fit=%s kind=%s solo=%s"):format(id, tostring(fit),
-        listing and listing.kind or "?", listing and tostring(listing.solo) or "?"))
+      Report.Add(("#%d fit=%s kind=%s members=%s delisted=%s"):format(id, tostring(fit),
+        listing and listing.kind or "?", listing and listing.numMembers or "?",
+        listing and tostring(listing.delisted) or "?"))
       if info then Report.Add("  info: " .. keys(info)) end
       if counts then Report.Add("  counts: " .. keys(counts)) end
       if activity then

@@ -39,8 +39,8 @@ function Listing.FromResult(resultID)
       DAMAGER = tonumber(counts.DAMAGER) or 0,
       NOROLE = tonumber(counts.NOROLE) or 0,
     },
-    -- Unverified on Forever: a one-person listing is a player looking for a
-    -- group, not a group. /openspot debug records the raw fields to check.
-    solo = numMembers <= 1,
+    -- Verified 2026-11-17: one-member listings look exactly like groups (with
+    -- *_REMAINING counts), so they are judged like groups (docs/adr/0002).
+    delisted = info.isDelisted == true,
   }
 end

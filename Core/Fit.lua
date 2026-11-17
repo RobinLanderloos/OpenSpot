@@ -46,7 +46,7 @@ end
 -- open, and room for the whole party (the player is one of `size`).
 function Fit.Evaluate(listing, want, settings)
   if not Fit.IsActive(want) then return true end
-  if listing.solo then return false end
+  if listing.delisted then return false end
   local open = Fit.OpenSpots(listing, settings)
   if want.mode == "party" then
     if open.free < (want.size or 1) then return false end

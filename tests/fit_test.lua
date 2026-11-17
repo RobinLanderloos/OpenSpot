@@ -58,11 +58,17 @@ test("a full raid fits nobody", function()
   eq(Fit.Evaluate(raid(20, 20), solo({ "DAMAGER" })), false)
 end)
 
-test("single-player listings are hidden while filtering", function()
-  local player = dungeon(0, 0, 1)
-  player.solo = true
-  eq(Fit.Evaluate(player, solo({ "DAMAGER" })), false, "filtering")
-  eq(Fit.Evaluate(player, solo({})), true, "no filter")
+test("a one-member listing is judged like any group", function()
+  -- Forever can't tell a lone leader from a player looking for a group.
+  eq(Fit.Evaluate(dungeon(0, 0, 1), solo({ "DAMAGER" })), true, "2 dps spots left")
+  eq(Fit.Evaluate(dungeon(1, 0, 0), solo({ "TANK" })), false, "tank taken")
+end)
+
+test("delisted listings are hidden while filtering", function()
+  local gone = dungeon(1, 0, 1)
+  gone.delisted = true
+  eq(Fit.Evaluate(gone, solo({ "DAMAGER" })), false, "filtering")
+  eq(Fit.Evaluate(gone, solo({})), true, "no filter")
 end)
 
 -- Issue 005: editable template.

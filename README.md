@@ -7,7 +7,7 @@ A WoW Forever addon that filters the Looking For Group window's Browse tab down 
 - **Tank / Healer / DPS** buttons under the Browse tab. Tick the spots you're looking for; listings without one are hidden. Several ticks: any of them. Nothing ticked: no filtering.
 - **In a party** the buttons become counts, pre-filled from your party's assigned roles (left-click +1, right-click -1). Groups need every counted spot open and room for the whole party.
 - 5-player dungeons are judged against a 1 tank / 1 healer / 3 DPS template (change it in settings). Members without a role count as DPS. Raids and other activities fit while they aren't full.
-- Single-player listings are hidden while filtering.
+- One-member listings are judged like any group (Forever can't tell a lone leader from a player looking for a group). Delisted listings are hidden while filtering.
 - `/openspot` opens settings; `/openspot debug` writes a diagnostic report to SavedVariables.
 
 Design decisions: `docs/adr/`. Requirements: `docs/prd/openspot.md`.

@@ -2,7 +2,7 @@
 
 ## State
 
-Open
+Completed 2026-11-17: hook works via the `results` path (55 to 2 with DPS ticked, rows hidden, bar placed fine). One-member listings are indistinguishable from groups, so ADR 0002 was revised to judge them like groups. Taint not yet observed over a longer session.
 
 ## What to build
 
@@ -12,10 +12,10 @@ See docs/prd/openspot.md and docs/adr/.
 
 ## Acceptance criteria
 
-- [ ] Rows really disappear in the live Browse tab and the counter matches
-- [ ] Report confirms member-count and activity fields
+- [x] Rows really disappear in the live Browse tab and the counter matches
+- [x] Report confirms member-count and activity fields
 - [ ] Apply/search not tainted (no 'blocked action' errors)
-- [ ] api-notes.md updated with verified facts
+- [x] api-notes.md updated with verified facts
 
 ## Blocked by
 

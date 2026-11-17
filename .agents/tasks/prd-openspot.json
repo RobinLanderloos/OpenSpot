@@ -82,7 +82,7 @@
       "id": "006",
       "title": "Verify client assumptions in game (HITL)",
       "description": "The user runs the addon in Forever with the Browse tab open and runs /openspot debug; we read the SavedVariables report and fix what differs from the stand-in: how rows are hidden, member-count fields (incl. *_REMAINING), single-player recognition, activity kind and size.",
-      "status": "open",
+      "status": "completed",
       "markdownFile": "docs/issues/006-verify-client-assumptions-in-game.md",
       "acceptanceCriteria": [
         "Rows really disappear in the live Browse tab and the counter matches",

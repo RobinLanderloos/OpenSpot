@@ -18,7 +18,7 @@ OpenSpot adds Tank / Healer / DPS toggles to the Browse tab. I tick the open spo
 6. As a player, I want my ticks remembered per character, so that my healer alt keeps Healer ticked and my warrior keeps Tank.
 7. As a player, I want a "Showing X of Y listings" line, so that I know the filter is active and how much it hides.
 8. As a player, I want the counter to name the active roles, so that I can tell at a glance what I'm filtering on.
-9. As a player, I want single-player listings hidden while a filter is active, so that I only see groups I could join.
+9. As a player, I want one-member listings judged like any group (Forever can't tell a lone leader from a single player), and delisted listings hidden while filtering, so that I only see listings I could still join.
 10. As a player, I want 5-man dungeon groups judged against 1 tank / 1 healer / 3 DPS, so that "open spot" matches normal dungeon groups.
 11. As a player, I want to change the 5-man template in settings, so that I can match how my server forms groups (e.g. 2 healers for harder content).
 12. As a player, I want members without a role to count as DPS, so that groups with unset roles are judged sensibly.
@@ -41,13 +41,13 @@ OpenSpot adds Tank / Healer / DPS toggles to the Browse tab. I tick the open spo
 
 - **Filter layer, not a new window** (ADR 0001). Controls are attached to the Browse tab; results are filtered there. Blizzard keeps search, activity picking and apply.
 - **Core/Fit** (deep, pure module): `Fit.Evaluate(listing, want, settings)` returns `fits, reason`. `Fit.OpenSpots(listing, settings)` returns `{ TANK, HEALER, DAMAGER, free }`.
-  - `listing`: `{ numMembers, maxMembers, kind = "dungeon" | "raid" | "other", counts = { TANK, HEALER, DAMAGER, NOROLE }, solo }`.
+  - `listing`: `{ numMembers, maxMembers, kind = "dungeon" | "raid" | "other", counts = { TANK, HEALER, DAMAGER, NOROLE }, delisted }`.
   - `want`: `{ mode = "solo", roles = { TANK = bool, ... } }` or `{ mode = "party", counts = { TANK = n, ... }, size = n }`.
   - Template rule (ADR 0002): dungeon open = max(0, template - members of that role), unassigned members added to DAMAGER; other kinds = `free` for every role while free > 0.
   - Solo = OR over ticked roles; party = AND over counts plus `free >= size` (every party member needs a slot; ADR 0003). No ticks/zero counts = everything fits.
 - **Core/Selection** (pure): holds solo ticks and party counts; `Selection.FromParty(roles)` builds counts from assigned roles (NONE adds nothing); switching party → solo restores the solo ticks; `Selection.Want(state, partySize)` produces the `want` for Fit.
 - **Core/Summary** (pure): the "Showing X of Y (Tank, DPS)" text.
-- **Game/Listing** adapter: turns a search result ID into a `listing` (from `C_LFGList.GetSearchResultInfo`, `GetSearchResultMemberCounts`, `GetActivityInfoTable` for max size and dungeon/raid kind). How a single-player listing is recognised is unverified and comes out of the debug report.
+- **Game/Listing** adapter: turns a search result ID into a `listing` (from `C_LFGList.GetSearchResultInfo`, `GetSearchResultMemberCounts`, `GetActivityInfoTable` for max size and dungeon/raid kind). Verified in game: one-member listings look exactly like groups, so there is no separate single-player case.
 - **Game/Browse** hook: re-filters after each results update of `LFGBrowseFrame`. How rows are removed (filtering the result list before display vs. hooking the update) is the main unknown; first build ships with a debug report to settle it.
 - **Game/Controls**: three toggles (solo) / three count steppers (party) and the counter line on the Browse tab.
 - **Game/Party**: listens to `GROUP_ROSTER_UPDATE` / role changes and pre-fills counts.

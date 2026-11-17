@@ -2,7 +2,7 @@
 
 ## State
 
-Open
+Completed 2026-11-17 (facts in the wow-forever-addon skill's api-notes.md).
 
 ## What to build
 
@@ -12,10 +12,10 @@ See docs/prd/openspot.md (v0.2) and docs/adr/0005.
 
 ## Acceptance criteria
 
-- [ ] Report lists categories and activities with their fields
-- [ ] Report shows member info fields for one result
-- [ ] Report shows which join and toggle functions exist
-- [ ] api-notes.md updated
+- [x] Report lists categories and activities with their fields
+- [x] Report shows member info fields for one result
+- [x] Report shows which join and toggle functions exist
+- [x] api-notes.md updated
 
 ## Blocked by
 

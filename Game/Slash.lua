@@ -19,24 +19,15 @@ end
 
 local function debugReport()
   Report.Start()
-  local browse = _G.LFGBrowseFrame
-  Report.Say("LFGBrowseFrame: " .. tostring(browse ~= nil) .. ", hooked: " .. tostring(ns.Browse.diag.hooked)
-    .. ", path: " .. tostring(ns.Browse.diag.path) .. ", redrawError: " .. tostring(ns.Browse.diag.redrawError))
-  if browse then
-    local methods = {}
-    for k, v in pairs(browse) do
-      if type(v) == "function" then methods[#methods + 1] = k end
-    end
-    table.sort(methods)
-    Report.Say("browse methods: " .. table.concat(methods, ","))
-    Report.Say("browse.results: " .. type(browse.results)
-      .. (type(browse.results) == "table" and (" (" .. #browse.results .. ")") or ""))
-  end
+  Report.Say("toggle hooked: " .. tostring(ns.Toggle.diag.hooked) .. ", useBlizzard: " .. tostring(ns.db.useBlizzard))
+  Report.Add("search: " .. keys(ns.Search.diag.lastSearch or {}) .. " | apply: " .. keys(ns.Search.diag.lastApply or {})
+    .. " | lastWhisperTarget: " .. tostring(ns.Search.diag.lastWhisperTarget))
+  Report.Add("whispers: " .. keys(OpenSpotCharDB.whispers or {}))
   local want = ns.CurrentWant()
   Report.Say("party size " .. ns.PartySize() .. ", want: " .. keys(want.mode == "party" and want.counts or want.roles)
     .. " mode=" .. want.mode .. ", template: " .. keys(ns.db.template))
-  local shown, total = ns.Browse.Counts()
-  Report.Say("counter: showing " .. shown .. " of " .. total)
+  local shown, total = ns.Window.Shown()
+  Report.Say("window: showing " .. #shown .. " of " .. total)
 
   local ok, count, results = pcall(C_LFGList.GetFilteredSearchResults)
   if not ok or type(results) ~= "table" then
@@ -170,7 +161,9 @@ SlashCmdList.OPENSPOT = function(msg)
       ns.db.report = { "debug failed: " .. tostring(err) }
       print("|cff40c0ffOpenSpot:|r debug failed: " .. tostring(err))
     end
-  else
+  elseif msg == "settings" or msg == "config" then
     ns.OpenOptions()
+  else
+    ns.Window.Toggle()
   end
 end

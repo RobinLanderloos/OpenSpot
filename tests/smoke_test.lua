@@ -115,27 +115,45 @@ _G.hooksecurefunc = function(t, name, fn)
   rawset(t, name, function(...) local r = { orig(...) }; fn(...); return unpack(r) end)
 end
 
--- Search results: 5-man dungeon groups (activity 799) plus one raid and one
--- single player. Counts are TANK, HEALER, DAMAGER, NOROLE.
+-- Search results: 5-man dungeon groups (activity 799) plus one 40-player
+-- listing. Counts are TANK, HEALER, DAMAGER, NOROLE.
 local RESULTS = {
   [1] = { 799, 3, { 1, 0, 2, 0 } }, -- needs healer + dps
   [2] = { 799, 4, { 1, 1, 2, 0 } }, -- needs dps
   [3] = { 799, 4, { 0, 1, 3, 0 } }, -- needs tank
   [4] = { 799, 5, { 1, 1, 3, 0 } }, -- full
   [5] = { 799, 1, { 0, 0, 1, 0 } }, -- one member: judged like a group
-  [6] = { 900, 15, { 2, 4, 9, 0 } }, -- raid with room
+  [6] = { 900, 15, { 2, 4, 9, 0 } }, -- 40-player listing with room
 }
+local ACTIVITIES = {
+  [798] = { fullName = "Ragefire Chasm", maxNumPlayers = 5, categoryID = 2, minLevelSuggestion = 10, maxLevelSuggestion = 16 },
+  [799] = { fullName = "Deadmines", maxNumPlayers = 5, categoryID = 2, minLevelSuggestion = 17, maxLevelSuggestion = 26 },
+  [800] = { fullName = "Shadowfang Keep", maxNumPlayers = 5, categoryID = 2, minLevelSuggestion = 20, maxLevelSuggestion = 30 },
+  [900] = { fullName = "Molten Core", maxNumPlayers = 40, categoryID = 2, minLevelSuggestion = 0, maxLevelSuggestion = 0 },
+}
+local searched, applied = nil, {}
 _G.C_LFGList = {
+  GetAvailableCategories = function() return { 2, 116 } end,
+  GetLfgCategoryInfo = function(id) return { name = id == 2 and "Dungeons" or "Quests & Zones" } end,
+  GetAvailableActivities = function(cat) if cat == 2 then return { 800, 798, 799, 900 } end return {} end,
+  GetActivityInfoTable = function(id) return ACTIVITIES[id] end,
+  Search = function(category, _, _, _, _, _, ids) searched = { category = category, ids = table.concat(ids, ",") } end,
+  GetSearchResults = function() return 6, { 1, 2, 3, 4, 5, 6 } end,
   GetSearchResultInfo = function(id)
-    local r = RESULTS[id]; return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2], leaderName = "Leader" .. id }
+    local r = RESULTS[id]
+    return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2], leaderName = "Leader" .. id, age = id * 10 }
   end,
   GetSearchResultMemberCounts = function(id)
     local c = RESULTS[id][3]; return { TANK = c[1], HEALER = c[2], DAMAGER = c[3], NOROLE = c[4] }
   end,
-  GetActivityInfoTable = function(id)
-    if id == 799 then return { fullName = "The Deadmines", maxNumPlayers = 5, categoryID = 2 } end
-    return { fullName = "Molten Core", maxNumPlayers = 40, categoryID = 114 }
+  GetSearchResultPlayerInfo = function(id, i)
+    if i > RESULTS[id][2] then return nil end
+    return { name = i == 1 and ("Leader" .. id) or ("Member" .. id .. "-" .. i), classFilename = "MAGE",
+      className = "Mage", assignedRole = "DAMAGER", level = 20, isLeader = i == 1 }
   end,
+  GetAvailableRoles = function() return true, false, true end,
+  ApplyToGroup = function(id, t, h, d) applied[id] = { t, h, d } end,
+  GetApplicationInfo = function(id) return id, applied[id] and "applied" or "none", "none" end,
   GetFilteredSearchResults = function() return 6, { 1, 2, 3, 4, 5, 6 } end,
 }
 
@@ -151,32 +169,19 @@ _G.UnitGroupRolesAssigned = function(unit)
   return group.roles[(tonumber(unit:match("%d+")) or 0) + 1] or "NONE"
 end
 
--- Stand-in for Forever's browse frame: UpdateResultList fetches, UpdateResults draws.
-local drawn
-local browse = CreateFrame("Frame", "LFGBrowseFrame", UIParent)
-rawset(browse, "UpdateResultList", function(self)
-  local _, results = C_LFGList.GetFilteredSearchResults()
-  rawset(self, "results", results)
-  self:UpdateResults()
+-- Blizzard's Looking For Group window and its toggle.
+local blizz = CreateFrame("Frame", "LFGParentFrame", UIParent)
+blizz:Hide()
+rawset(blizz, "HookScript", function(s, name, fn)
+  local old = s.scripts[name]
+  s.scripts[name] = function(...) if old then old(...) end fn(...) end
 end)
--- The scroll box shows one row frame per drawn result.
-local rowFrames = {}
-local box = CreateFrame("Frame", nil, browse)
-rawset(box, "Update", function(self)
-  for i, id in ipairs(drawn or {}) do
-    local row = rowFrames[i] or CreateFrame("Button", nil, self)
-    rowFrames[i] = row
-    rawset(row, "GetElementData", function() return { resultID = id } end)
-  end
-end)
-rawset(box, "ForEachFrame", function(self, fn)
-  for i = 1, #(drawn or {}) do fn(rowFrames[i]) end
-end)
-rawset(browse, "ScrollBox", box)
-rawset(browse, "UpdateResults", function(self) drawn = rawget(self, "results"); self.ScrollBox:Update() end)
+rawset(blizz, "Hide", function(s) s.shown = false; if s.scripts.OnHide then s.scripts.OnHide(s) end end)
+_G.LFGParentFrame = blizz
+_G.HideUIPanel = function(f) f:Hide() end
+_G.ToggleGroupFinderFrame = function() if blizz.shown then blizz:Hide() else blizz:Show() end end
 local told
 _G.ChatFrame_SendTell = function(name) told = name end
-_G.LFGBrowseFrame = browse
 
 -- Load the addon like the client does.
 local ns = {}
@@ -189,7 +194,9 @@ fire("ADDON_LOADED", ADDON)
 fire("PLAYER_LOGIN")
 
 local failed = 0
+local ran = 0
 local function check(name, condition, detail)
+  ran = ran + 1
   if not condition then
     failed = failed + 1
     print("FAIL  " .. name .. (detail and ("\n      " .. tostring(detail)) or ""))
@@ -207,51 +214,117 @@ local function slash(command, message)
   return ok, ok and table.concat(said, "\n") or tostring(err)
 end
 
-local function drawnIDs() return table.concat(drawn or {}, ",") end
-local function roleButton(label)
-  return find(function(w) return rawget(w, "text") and w.text:match("^" .. label) and w.scripts.OnClick end)
+local function window() return ns.Window.Frame() end
+-- Result IDs on visible rows, sorted, and the row widget for one result.
+local function shownIDs()
+  local ids = {}
+  for _, w in ipairs(widgets) do
+    local data = rawget(w, "data")
+    if data and rawget(w, "whisper") and visible(w) then ids[#ids + 1] = data.id end
+  end
+  table.sort(ids)
+  return table.concat(ids, ",")
 end
+local function rowFor(id)
+  for _, w in ipairs(widgets) do
+    local data = rawget(w, "data")
+    if data and data.id == id and rawget(w, "whisper") and visible(w) then return w end
+  end
+end
+local function buttonText(prefix)
+  return find(function(w)
+    return rawget(w, "text") and w.text:find("^" .. prefix) and w.scripts.OnClick and visible(w)
+  end)
+end
+local function click(w, mouse) w.scripts.OnClick(w, mouse or "LeftButton") end
 
-check("the bar is attached to the browse frame", find(function(w) return rawget(w, "name") == "OpenSpotBar" end) ~= nil)
+-- Opening: the Looking For Group key opens ours, not Blizzard's.
+ToggleGroupFinderFrame()
+check("Looking For Group key opens our window", window() and window().shown, "window not shown")
+check("and Blizzard's window is closed again", blizz.shown == false)
 
-browse:UpdateResultList()
-check("nothing ticked shows everything", drawnIDs() == "1,2,3,4,5,6", drawnIDs())
+check("category tabs", buttonText("Dungeons") ~= nil and buttonText("Quests & Zones") ~= nil, shownTexts())
+local texts = shownTexts()
+check("activities suited to level 20 are offered, lowest first",
+  texts:find("Deadmines", 1, true) and texts:find("Shadowfang Keep", 1, true)
+  and not texts:find("Ragefire Chasm", 1, true), texts)
 
-roleButton("DPS").scripts.OnClick(roleButton("DPS"), "LeftButton")
-check("DPS ticked: dps-needing groups and the raid", drawnIDs() == "1,2,5,6", drawnIDs())
+-- Search needs ticked activities.
+click(buttonText("Search"))
+check("search without ticks asks to tick", shownTexts():find("Tick one or more activities first.", 1, true) ~= nil)
+local deadmines = find(function(w) return rawget(w, "activityID") == 799 and visible(w) end)
+click(deadmines)
+click(buttonText("Search"))
+check("search runs with the ticked activities", searched and searched.category == 2 and searched.ids == "799",
+  searched and (searched.category .. " " .. searched.ids))
+check("ticked activities saved per character", OpenSpotCharDB.activities[799] == true)
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+check("nothing ticked shows every listing", shownIDs() == "1,2,3,4,5,6", shownIDs())
+check("rows show activity, leader, open spots and age",
+  shownTexts():find("Deadmines", 1, true) and shownTexts():find("Leader2", 1, true)
+  and shownTexts():find("T0 H0 D1", 1, true) and shownTexts():find("20s", 1, true), shownTexts())
+
+click(buttonText("DPS"))
+check("DPS ticked: dps-needing groups and the big listing", shownIDs() == "1,2,5,6", shownIDs())
 check("counter shows", shownTexts():find("Showing 4 of 6 listings (DPS)", 1, true) ~= nil, shownTexts())
-
-browse:UpdateResultList()
-check("a new search is filtered too", drawnIDs() == "1,2,5,6", drawnIDs())
-
-roleButton("Tank").scripts.OnClick(roleButton("Tank"), "LeftButton")
-check("Tank + DPS", drawnIDs() == "1,2,3,5,6", drawnIDs())
-check("ticks saved per character", OpenSpotCharDB.selection.solo.TANK == true)
+click(buttonText("Tank"))
+check("Tank + DPS", shownIDs() == "1,2,3,5,6", shownIDs())
+check("role ticks saved per character", OpenSpotCharDB.selection.solo.TANK == true)
 
 -- Party of 2: tank + dps.
 group.size, group.roles = 2, { "TANK", "DAMAGER" }
 fire("GROUP_ROSTER_UPDATE")
-check("party: needs tank and dps open plus 2 free", drawnIDs() == "5,6", drawnIDs())
-check("party button shows count", roleButton("Tank") and roleButton("Tank").text == "Tank 1", roleButton("Tank") and roleButton("Tank").text)
-roleButton("Tank").scripts.OnClick(roleButton("Tank"), "RightButton")
-check("right-click lowers the count", drawnIDs() == "1,5,6", drawnIDs())
-
+check("party: needs tank and dps open plus 2 free", shownIDs() == "5,6", shownIDs())
+check("party button shows count", buttonText("Tank 1") ~= nil, shownTexts())
+click(buttonText("Tank 1"), "RightButton")
+check("right-click lowers the count", shownIDs() == "1,5,6", shownIDs())
 group.size, group.roles = 1, {}
 fire("GROUP_ROSTER_UPDATE")
-check("solo ticks are back after leaving", drawnIDs() == "1,2,3,5,6", drawnIDs())
+check("solo ticks are back after leaving", shownIDs() == "1,2,3,5,6", shownIDs())
+
+-- Whisper and join.
+local row1 = rowFor(1)
+click(row1.whisper)
+check("Whisper opens a whisper to the leader", told == "Leader1", told)
+fire("CHAT_MSG_WHISPER_INFORM", "hi", "Leader1-Forever")
+row1 = rowFor(1)
+check("a whispered leader's row is tagged", row1.tag.text == "Whispered <1m", row1.tag.text)
+check("and dimmed", rawget(row1, "alpha") == 0.6, rawget(row1, "alpha"))
+check("other rows untouched", rowFor(2).tag.text == "" and rawget(rowFor(2), "alpha") == 1)
+check("whispers saved per character", OpenSpotCharDB.whispers.leader1 ~= nil)
+click(rowFor(2).join)
+check("Join applies with the ticked roles", applied[2] and applied[2][1] == true and applied[2][2] == false
+  and applied[2][3] == true)
+check("the row shows Applied", rowFor(2).join.text == "Applied", rowFor(2).join.text)
+
+-- Sorting by column.
+click(buttonText("Leader"))
+check("leader column sorts", rowFor(1) ~= nil)
+
+-- Blizzard's window on request.
+click(buttonText("Blizzard window"))
+check("Blizzard window button opens the original", blizz.shown == true)
+check("and closes ours", window().shown == false)
+blizz:Hide()
+ToggleGroupFinderFrame()
+check("afterwards the key opens ours again", window().shown == true and blizz.shown == false)
 
 ns.db.template.HEALER = 2
 ns.Changed()
-check("template change re-filters", drawnIDs() == "1,2,3,5,6", drawnIDs())
+check("template change re-filters", shownIDs() == "1,2,3,5,6", shownIDs())
 
 local ok, out = slash("OPENSPOT", "debug")
 check("/openspot debug runs", ok, out)
 check("debug report stored", type(OpenSpotDB.report) == "table" and #OpenSpotDB.report > 5,
   OpenSpotDB.report and table.concat(OpenSpotDB.report, "\n"))
 ok, out = slash("OPENSPOT", "probe")
-check("/openspot probe runs", ok and OpenSpotDB.report and OpenSpotDB.report[2] and OpenSpotDB.report[2]:find("player level 20", 1, true), OpenSpotDB.report and table.concat(OpenSpotDB.report or {}, "\n"))
+check("/openspot probe runs", ok and OpenSpotDB.report and OpenSpotDB.report[2]
+  and OpenSpotDB.report[2]:find("player level 20", 1, true), OpenSpotDB.report and table.concat(OpenSpotDB.report or {}, "\n"))
+ok, out = slash("OPENSPOT", "settings")
+check("/openspot settings runs", ok, out)
 ok, out = slash("OPENSPOT", "")
-check("/openspot opens settings", ok, out)
+check("/openspot toggles the window", ok and window().shown == false, out)
 
+print("checks run: " .. ran)
 io.write(failed == 0 and "load check passed\n" or (failed .. " load checks failed\n"))
 os.exit(failed == 0 and 0 or 1)

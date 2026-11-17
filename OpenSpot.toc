@@ -1,8 +1,8 @@
 ## Interface: 16001
 ## Title: OpenSpot
-## Notes: Filters the Looking For Group browser to groups with an open spot for your role.
+## Notes: A group finder that shows only groups with an open spot for your role.
 ## Author: Robin
-## Version: 0.1.1
+## Version: 0.2.0
 ## SavedVariables: OpenSpotDB
 ## SavedVariablesPerCharacter: OpenSpotCharDB
 ## IconTexture: Interface\Icons\INV_Misc_GroupLooking
@@ -11,9 +11,14 @@ Locales\enUS.lua
 Core\Fit.lua
 Core\Selection.lua
 Core\Summary.lua
+Core\Whispers.lua
+Core\Activities.lua
+Core\Rows.lua
 Game\Report.lua
 Game\Main.lua
 Game\Listing.lua
-Game\Browse.lua
+Game\Search.lua
+Game\Window.lua
+Game\Toggle.lua
 Game\Options.lua
 Game\Slash.lua

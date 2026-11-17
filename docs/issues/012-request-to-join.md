@@ -2,7 +2,7 @@
 
 ## State
 
-Open
+Built and tested outside the game (2026-11-17); in-game check in issue 014.
 
 ## What to build
 

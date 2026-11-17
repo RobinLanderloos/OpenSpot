@@ -101,7 +101,7 @@
       "id": "007",
       "title": "Probe the client for the own window (HITL)",
       "description": "Extend /openspot debug with the facts the window needs: C_LFGList.GetAvailableCategories / GetLfgCategoryInfo, GetAvailableActivities per category with GetActivityInfoTable fields (level range?), per-member info for a result (GetSearchResultPlayerInfo / GetSearchResultMemberInfo), whether ApplyToGroup / a request-to-join call exists, the Looking For Group toggle function names (LFGVanilla_ToggleFrame, ToggleGroupFinderFrame, ToggleLFGParentFrame, PVEFrame...), and search cooldown info. The user runs it, we read SavedVariables.",
-      "status": "open",
+      "status": "completed",
       "markdownFile": "docs/issues/007-probe-client-for-the-own-window.md",
       "acceptanceCriteria": [
         "Report lists categories and activities with their fields",
@@ -115,7 +115,7 @@
       "id": "008",
       "title": "Window skeleton opened by the Looking For Group key",
       "description": "OpenSpot's own movable window (Escape closes, position saved), opened by the Looking For Group key/button and /openspot. A 'Blizzard window' button opens the original. Settings move to a button in the window.",
-      "status": "open",
+      "status": "completed (outside the game; in-game check is 014)",
       "markdownFile": "docs/issues/008-window-skeleton-and-toggle.md",
       "acceptanceCriteria": [
         "Looking For Group key opens our window (or fallback: command + button on Blizzard's window, per ADR 0005)",
@@ -130,7 +130,7 @@
       "id": "009",
       "title": "Activity checklist, Search and filtered results",
       "description": "Category tabs and activity checklist (level-filtered when the client gives ranges, ticks per character), Search button with cooldown, results from LFG_LIST_SEARCH_RESULTS_RECEIVED drawn as rows, filtered by the v1 role buttons/party counts with the Showing X of Y line.",
-      "status": "open",
+      "status": "completed (outside the game; in-game check is 014)",
       "markdownFile": "docs/issues/009-activities-search-and-filtered-results.md",
       "acceptanceCriteria": [
         "Activities filtered by level and remembered (unit tests)",
@@ -145,7 +145,7 @@
       "id": "010",
       "title": "Row columns and sorting",
       "description": "Rows show activity, leader, member class icons, open spots per role and age; best-fit-first order and sortable column headers.",
-      "status": "open",
+      "status": "completed (outside the game; in-game check is 014)",
       "markdownFile": "docs/issues/010-row-columns-and-sorting.md",
       "acceptanceCriteria": [
         "Row model and age text (unit tests)",
@@ -160,7 +160,7 @@
       "id": "011",
       "title": "Whisper button and whispered tracking",
       "description": "Whisper button per row opens a whisper to the leader. Any whisper to a leader tags the row 'Whispered 3m' and dims it for an hour, per character.",
-      "status": "open",
+      "status": "completed (outside the game; in-game check is 014)",
       "markdownFile": "docs/issues/011-whisper-button-and-whispered-tracking.md",
       "acceptanceCriteria": [
         "Whisper memory with 1-hour expiry (unit tests)",
@@ -174,7 +174,7 @@
       "id": "012",
       "title": "Request to join (if the client allows it)",
       "description": "If the probe shows a usable join call, a Request to join button per row; otherwise this issue is closed as not possible.",
-      "status": "open",
+      "status": "completed (outside the game; in-game check is 014)",
       "markdownFile": "docs/issues/012-request-to-join.md",
       "acceptanceCriteria": [
         "Button applies from a click, or issue closed with the reason"
@@ -188,7 +188,7 @@
       "id": "013",
       "title": "Member tooltip",
       "description": "Hovering a row lists every member's name, class and role, if the client exposes per-member info.",
-      "status": "open",
+      "status": "completed (outside the game; in-game check is 014)",
       "markdownFile": "docs/issues/013-member-tooltip.md",
       "acceptanceCriteria": [
         "Tooltip lists members (smoke test) or issue closed with the reason"

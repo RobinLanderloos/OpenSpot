@@ -2,7 +2,7 @@
 ## Title: OpenSpot
 ## Notes: A group finder that shows only groups with an open spot for your role.
 ## Author: Robin
-## Version: 0.2.0
+## Version: 0.3.0
 ## SavedVariables: OpenSpotDB
 ## SavedVariablesPerCharacter: OpenSpotCharDB
 ## IconTexture: Interface\Icons\INV_Misc_GroupLooking

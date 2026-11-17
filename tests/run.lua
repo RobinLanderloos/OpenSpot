@@ -9,6 +9,7 @@ for _, file in ipairs({
   "Core/Fit.lua",
   "Core/Selection.lua",
   "Core/Summary.lua",
+  "Core/Whispers.lua",
 }) do
   assert(loadfile(file))(ADDON, ns)
 end
@@ -35,6 +36,7 @@ for _, file in ipairs({
   "tests/fit_test.lua",
   "tests/selection_test.lua",
   "tests/summary_test.lua",
+  "tests/whispers_test.lua",
 }) do
   assert(loadfile(file))(ns, test, eq)
 end

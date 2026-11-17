@@ -29,6 +29,7 @@ local function newWidget(parent)
     if key == "SetAttribute" then
       return function(s, name, v) rawset(s, "attrs", rawget(s, "attrs") or {}); s.attrs[name] = v end
     end
+    if key == "SetAlpha" then return function(s, a) rawset(s, "alpha", a) end end
     if key == "IsShown" then return function(s) return s.shown end end
     if key == "Show" then return function(s) s.shown = true; if s.scripts.OnShow then s.scripts.OnShow(s) end end end
     if key == "Hide" then return function(s) s.shown = false end end
@@ -126,7 +127,7 @@ local RESULTS = {
 }
 _G.C_LFGList = {
   GetSearchResultInfo = function(id)
-    local r = RESULTS[id]; return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2] }
+    local r = RESULTS[id]; return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2], leaderName = "Leader" .. id }
   end,
   GetSearchResultMemberCounts = function(id)
     local c = RESULTS[id][3]; return { TANK = c[1], HEALER = c[2], DAMAGER = c[3], NOROLE = c[4] }
@@ -157,7 +158,23 @@ rawset(browse, "UpdateResultList", function(self)
   rawset(self, "results", results)
   self:UpdateResults()
 end)
-rawset(browse, "UpdateResults", function(self) drawn = rawget(self, "results") end)
+-- The scroll box shows one row frame per drawn result.
+local rowFrames = {}
+local box = CreateFrame("Frame", nil, browse)
+rawset(box, "Update", function(self)
+  for i, id in ipairs(drawn or {}) do
+    local row = rowFrames[i] or CreateFrame("Button", nil, self)
+    rowFrames[i] = row
+    rawset(row, "GetElementData", function() return { resultID = id } end)
+  end
+end)
+rawset(box, "ForEachFrame", function(self, fn)
+  for i = 1, #(drawn or {}) do fn(rowFrames[i]) end
+end)
+rawset(browse, "ScrollBox", box)
+rawset(browse, "UpdateResults", function(self) drawn = rawget(self, "results"); self.ScrollBox:Update() end)
+local told
+_G.ChatFrame_SendTell = function(name) told = name end
 _G.LFGBrowseFrame = browse
 
 -- Load the addon like the client does.
@@ -225,6 +242,25 @@ check("solo ticks are back after leaving", drawnIDs() == "1,2,3,5,6", drawnIDs()
 ns.db.template.HEALER = 2
 ns.Changed()
 check("template change re-filters", drawnIDs() == "1,2,3,5,6", drawnIDs())
+
+-- Message buttons and whisper marks.
+local function rowFor(id)
+  for _, row in ipairs(rowFrames) do
+    local b = rawget(row, "openSpotMessage")
+    if b and b.leader == "Leader" .. id and visible(row) then return row, b end
+  end
+end
+local row1, msg1 = rowFor(1)
+check("each row gets a message button", msg1 ~= nil and msg1.text == "Msg", msg1 and msg1.text)
+msg1.scripts.OnClick(msg1)
+check("the button opens a whisper to the leader", told == "Leader1", told)
+fire("CHAT_MSG_WHISPER_INFORM", "hi", "Leader1-Forever")
+row1, msg1 = rowFor(1)
+check("a whispered leader's row is marked", msg1.text == "Sent <1m", msg1.text)
+check("and dimmed", rawget(row1, "alpha") == 0.6, rawget(row1, "alpha"))
+local row2, msg2 = rowFor(2)
+check("other rows stay unmarked", msg2 and msg2.text == "Msg" and rawget(row2, "alpha") == 1)
+check("whispers saved per character", OpenSpotCharDB.whispers.leader1 ~= nil)
 
 local ok, out = slash("OPENSPOT", "debug")
 check("/openspot debug runs", ok, out)

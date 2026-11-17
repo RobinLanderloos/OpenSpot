@@ -11,9 +11,11 @@ Locales\enUS.lua
 Core\Fit.lua
 Core\Selection.lua
 Core\Summary.lua
+Core\Whispers.lua
 Game\Report.lua
 Game\Main.lua
 Game\Listing.lua
 Game\Browse.lua
+Game\Rows.lua
 Game\Options.lua
 Game\Slash.lua

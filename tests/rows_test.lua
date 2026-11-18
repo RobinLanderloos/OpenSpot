@@ -51,3 +51,23 @@ test("recruit order: a DPS trio before a pair before solo players", function()
   Rows.Sort(rows)
   eq(rows[1].id .. rows[2].id .. rows[3].id .. rows[4].id, "2341")
 end)
+
+test("only rows for the ticked activities", function()
+  eq(Rows.InActivities({ activityIDs = { 799 } }, { 798, 799 }), true, "ticked")
+  eq(Rows.InActivities({ activityIDs = { 900 } }, { 799 }), false, "other activity")
+  eq(Rows.InActivities({ activityIDs = { 900, 799 } }, { 799 }), true, "one of several")
+  eq(Rows.InActivities({ activityIDs = { 799 } }, {}), false, "nothing ticked")
+  eq(Rows.InActivities({}, { 799 }), true, "unknown activity kept")
+end)
+
+test("a row listed for several activities shows the ticked one", function()
+  local row = { activity = "Wailing Caverns", activityIDs = { 796, 799, 1982 },
+    activityNames = { [796] = "Wailing Caverns", [799] = "Deadmines", [1982] = "Ruins of Lordaeron" } }
+  local label, others = Rows.ActivityLabel(row, { 1982 })
+  eq(label, "Ruins of Lordaeron +2")
+  eq(table.concat(others, ", "), "Wailing Caverns, Deadmines")
+  eq((Rows.ActivityLabel(row, {})), "Wailing Caverns +2", "nothing ticked: the first")
+  eq((Rows.ActivityLabel({ activity = "Deadmines", activityIDs = { 799 },
+    activityNames = { [799] = "Deadmines" } }, { 799 })), "Deadmines", "single activity: no count")
+  eq((Rows.ActivityLabel({ activity = "X" }, { 1 })), "X", "unknown activities")
+end)

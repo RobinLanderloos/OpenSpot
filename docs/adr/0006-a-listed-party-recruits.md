@@ -19,4 +19,5 @@ While recruiting:
 ## Consequences
 
 - Invite works only on solo listings: a pair's leader is already in a party, so inviting fails. Pairs and trios get Whisper only. If `InviteUnit` turns out to be blocked on Forever, recruiting ships with Whisper only.
+- Revised 2026-11-18: Invite is not tied to recruiting. It shows on every solo listing whenever the player may invite (solo, or party leader/assistant), in its own column. A solo player who lists themselves is usually looking for a group, so listing solo does not switch to recruiting; the user still wanted to invite other solo players from there.
 - A party that lists itself but wants to join another group must delist first.

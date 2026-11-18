@@ -39,6 +39,15 @@ local function debugReport()
     .. " mode=" .. want.mode .. ", template: " .. keys(ns.db.template))
   local shown, total = ns.Window.Shown()
   Report.Say("window: showing " .. #shown .. " of " .. total)
+  local ticked = {}
+  for id in pairs(OpenSpotCharDB.activities or {}) do ticked[#ticked + 1] = tostring(id) end
+  table.sort(ticked)
+  Report.Add("ticked activities: " .. table.concat(ticked, ","))
+  for i, r in ipairs(shown) do
+    if i > 40 then break end
+    Report.Add(("  shown #%s %s ids=%s"):format(tostring(r.id), tostring(r.activity),
+      table.concat(r.activityIDs or {}, ",")))
+  end
 
   local ok, count, results = pcall(C_LFGList.GetFilteredSearchResults)
   if not ok or type(results) ~= "table" then

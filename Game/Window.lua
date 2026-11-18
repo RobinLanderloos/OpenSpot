@@ -12,14 +12,14 @@ ns.Window = Window
 -- Rows are 48px high with 30px member icons: 24px rows were unreadable in
 -- game (user, 2026-11-17). The window grew to keep 9 rows and 5 members.
 local ROW_HEIGHT, VISIBLE_ROWS = 48, 9
-local WIDTH, HEIGHT = 980, 620
+local WIDTH, HEIGHT = 1050, 620
 local LEFT_WIDTH = 210
 
--- Column x positions and widths inside a result row (row width 610). Rows
+-- Column x positions and widths inside a result row (WIDTH - LEFT_WIDTH - 40). Rows
 -- and headers both use this, so they always line up.
 local COL = {
   activity = { 6, 150 }, leader = { 162, 124 }, members = { 292, 166 }, count = { 464, 40 },
-  open = { 508, 74 }, age = { 588, 54 }, whisper = { 648, 80 },
+  open = { 508, 74 }, age = { 588, 54 }, whisper = { 648, 80 }, invite = { 734, 64 },
 }
 
 local frame
@@ -114,6 +114,7 @@ local function updateRows()
   if not frame then return end
   local now = time()
   local recruiting = ns.Recruiting()
+  local canInvite = ns.CanInvite()
   for i = 1, VISIBLE_ROWS do
     local row = rowFrames[i]
     local data = state.shown[i + state.offset]
@@ -166,7 +167,7 @@ local function updateRows()
       -- players can be invited, groups only whispered (docs/adr/0006).
       row.open:SetText(Rows.OpenText(Fit.OpenSpots(data.listing, ns.Settings())))
       row.open:SetShown(not recruiting)
-      row.invite:SetShown(recruiting and data.listing.numMembers == 1)
+      row.invite:SetShown(canInvite and data.listing.numMembers == 1)
       row.age:SetText(Rows.AgeText(data.age))
       row:SetAlpha(tag and 0.6 or 1)
       row:Show()
@@ -185,11 +186,14 @@ end
 local function refilter()
   if not frame then return end
   local want, settings = ns.CurrentWant(), ns.Settings()
-  -- Recruiting: our own listing would match itself.
-  local ours = want.mode == "recruit" and ns.PartyNames() or {}
+  -- Our own listing (solo or party) is never worth showing.
+  local ours = ns.PartyNames()
+  local ids = Activities.Ticked(ticks(), offered())
   local shown = {}
   for _, r in ipairs(state.rows) do
-    if not ours[Whispers.Key(r.leader) or ""] and Fit.Evaluate(r.listing, want, settings) then
+    if not ours[Whispers.Key(r.leader) or ""] and Rows.InActivities(r, ids)
+      and Fit.Evaluate(r.listing, want, settings) then
+      r.activity, r.otherActivities = Rows.ActivityLabel(r, ids)
       shown[#shown + 1] = r
     end
   end
@@ -211,6 +215,9 @@ local function showMembers(row)
   if not data then return end
   GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
   GameTooltip:SetText(data.activity)
+  if data.otherActivities and #data.otherActivities > 0 then
+    GameTooltip:AddLine(L.ALSO_LISTED:format(table.concat(data.otherActivities, ", ")), 0.8, 0.8, 0.8, true)
+  end
   if data.comment and data.comment ~= "" then GameTooltip:AddLine(data.comment, 1, 1, 1, true) end
   for _, m in ipairs(data.members) do
     local r, g, b = classColor(m.classFilename)
@@ -277,9 +284,9 @@ local function buildRow(parent, i)
   end)
   row.whisper:SetScript("OnLeave", function() GameTooltip:Hide() end)
 
-  -- Recruiting: invite a solo player. Shown in the Open spots column's place.
-  row.invite = button(row, L.INVITE, COL.open[2], 28)
-  row.invite:SetPoint("LEFT", row, "LEFT", COL.open[1], 0)
+  -- Invite a solo player, whenever we may invite (solo, leader or assistant).
+  row.invite = button(row, L.INVITE, COL.invite[2], 28)
+  row.invite:SetPoint("LEFT", row, "LEFT", COL.invite[1], 0)
   row.invite:SetScript("OnClick", function()
     local name = row.data and row.data.leader
     if name and Search.Invite(name) then

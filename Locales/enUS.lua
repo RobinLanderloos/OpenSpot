@@ -44,6 +44,7 @@ ns.L = {
   INVITED_NOW = "Invited <1m",
   INVITED_MINUTES = "Invited %dm",
   INVITE = "Invite",
+  ALSO_LISTED = "Also listed for: %s",
   INVITE_GROUP_TIP = "Already a group: whisper to arrange.",
   NEED_LABEL = "Looking for:",
   TIP_RECRUIT = "Your party is listed, so OpenSpot looks for players who fill what you still need. Left-click adds one, right-click removes one.",

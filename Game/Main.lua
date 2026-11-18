@@ -39,6 +39,16 @@ function ns.ListedActivity()
   return entry.activityID
 end
 
+-- Whether the player may invite: solo, or leader/assistant of the party.
+function ns.CanInvite()
+  if ns.PartySize() <= 1 then return true end
+  if type(C_PartyInfo) == "table" and type(C_PartyInfo.CanInvite) == "function" then
+    local ok, can = pcall(C_PartyInfo.CanInvite)
+    if ok and type(can) == "boolean" then return can end
+  end
+  return (UnitIsGroupLeader and UnitIsGroupLeader("player")) or (UnitIsGroupAssistant and UnitIsGroupAssistant("player")) or false
+end
+
 -- A listed party looks for players instead of a group (docs/adr/0006).
 function ns.Recruiting()
   return ns.PartySize() > 1 and ns.ListedActivity() ~= nil

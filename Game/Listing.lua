@@ -10,6 +10,12 @@ local function activityID(info)
   return info.activityID
 end
 
+-- Every activity a result is listed for, as a list.
+function Listing.ActivityIDs(info)
+  if type(info.activityIDs) == "table" and #info.activityIDs > 0 then return info.activityIDs end
+  return info.activityID and { info.activityID } or {}
+end
+
 function Listing.ActivityInfo(info)
   local id = activityID(info)
   if not id or not C_LFGList.GetActivityInfoTable then return nil, id end

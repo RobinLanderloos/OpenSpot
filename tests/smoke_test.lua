@@ -150,7 +150,7 @@ _G.C_LFGList = {
   GetSearchResults = function() return #resultIDs, resultIDs end,
   GetSearchResultInfo = function(id)
     local r = RESULTS[id]
-    return r and { searchResultID = id, activityIDs = { r[1] }, numMembers = r[2], leaderName = r[4] or ("Leader" .. id), age = id * 10 }
+    return r and { searchResultID = id, activityIDs = r.ids or { r[1] }, numMembers = r[2], leaderName = r[4] or ("Leader" .. id), age = id * 10 }
   end,
   GetSearchResultMemberCounts = function(id)
     local c = RESULTS[id][3]; return { TANK = c[1], HEALER = c[2], DAMAGER = c[3], NOROLE = c[4] }
@@ -174,7 +174,9 @@ _G.C_LFGList = {
 }
 
 -- Group state the tests change.
-local group = { size = 1, roles = {} }
+local group = { size = 1, roles = {}, leader = true }
+_G.UnitIsGroupLeader = function(unit) return unit == "player" and group.size > 1 and group.leader end
+_G.UnitIsGroupAssistant = function() return false end
 _G.UnitLevel = function() return 20 end
 _G.IsInGroup = function() return group.size > 1 end
 _G.IsInRaid = function() return false end
@@ -291,6 +293,19 @@ click(buttonText("Search"))
 check("Search button searches again", searched and searched.ids == "799")
 check("ticked activities saved per character", OpenSpotCharDB.activities[799] == true)
 fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+-- Forever's search also returns listings for activities that weren't asked
+-- for (seen in game 2026-11-18): the Molten Core listing must stay hidden.
+check("listings for unticked activities are hidden", shownIDs() == "1,2,3,4,5", shownIDs())
+-- A listing posted for several activities shows the ticked one (seen in
+-- game 2026-11-18: Wailing Caverns + Deadmines + Ruins of Lordaeron).
+RESULTS[2].ids = { 900, 799 }
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+check("multi-activity listing kept and labelled by the ticked activity",
+  shownIDs() == "1,2,3,4,5" and rowFor(2).activity.text == "Deadmines +1", rowFor(2) and rowFor(2).activity.text)
+RESULTS[2].ids = nil
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
+click(find(function(w) return rawget(w, "activityID") == 900 and visible(w) end))
+fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 check("nothing ticked shows every listing", shownIDs() == "1,2,3,4,5,6", shownIDs())
 check("rows show activity, leader, open spots and age",
   shownTexts():find("Deadmines", 1, true) and shownTexts():find("Leader2", 1, true)
@@ -325,14 +340,19 @@ check("and dimmed", rawget(row1, "alpha") == 0.6, rawget(row1, "alpha"))
 check("other rows untouched", rowFor(2).tag.text == "" and rawget(rowFor(2), "alpha") == 1)
 check("whispers saved per character", OpenSpotCharDB.whispers.leader1 ~= nil)
 check("rows have no Join button", rawget(rowFor(2), "join") == nil)
+-- Solo, any player listed alone can be invited (seen missing in game
+-- 2026-11-18 while listed solo); groups only whispered.
+check("solo: Invite on one-member listings", visible(rowFor(5).invite), shownIDs())
+check("solo: no Invite on groups", not visible(rowFor(2).invite))
 
 -- Unticking the last activity clears the list; ticking again searches.
+click(find(function(w) return rawget(w, "activityID") == 900 and visible(w) end))
 searched = nil
 click(deadmines)
 check("unticking the last activity clears the list", shownIDs() == "" and searched == nil, shownIDs())
 click(deadmines)
 fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
-check("ticking again searches and fills the list", searched and shownIDs() == "1,2,3,5,6", shownIDs())
+check("ticking again searches and fills the list", searched and shownIDs() == "1,2,3,5", shownIDs())
 
 -- Clear unticks this tab's activities and empties the list.
 click(buttonText("Clear"))
@@ -340,7 +360,7 @@ check("Clear unticks the activities", OpenSpotCharDB.activities[799] == nil)
 check("and empties the list", shownIDs() == "", shownIDs())
 click(deadmines)
 fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
-check("ticking after Clear searches again", shownIDs() == "1,2,3,5,6", shownIDs())
+check("ticking after Clear searches again", shownIDs() == "1,2,3,5", shownIDs())
 
 -- Sorting by column.
 local leaderHeader = find(function(w)
@@ -400,6 +420,11 @@ check("roleless member: class icon, no badge", visible(rowFor(7).classes[1]) and
 check("Open spots column hidden", not visible(rowFor(5).open))
 check("Invite on solo listings", visible(rowFor(5).invite) and visible(rowFor(7).invite))
 check("no Invite on a pair", not visible(rowFor(8).invite))
+group.leader = false
+fire("GROUP_ROSTER_UPDATE")
+check("no Invite when not leader or assistant", not visible(rowFor(5).invite))
+group.leader = true
+fire("GROUP_ROSTER_UPDATE")
 click(rowFor(5).invite)
 check("Invite invites the leader", invited[1] == "Leader5", invited[1])
 check("invited row tagged and dimmed", rowFor(5).tag.text == "Invited <1m" and rawget(rowFor(5), "alpha") == 0.6,
@@ -410,8 +435,8 @@ check("needs adjusted by hand", buttonText("DPS 2") ~= nil and shownIDs() == "5,
 click(buttonText("DPS 2"), "RightButton")
 check("one DPS needed: the pair no longer fits", shownIDs() == "5,7", shownIDs())
 click(buttonText("DPS 1"), "RightButton")
-check("nothing needed: group full, nothing filtered but our own listing",
-  shownTexts():find("Your group is full", 1, true) and shownIDs() == "1,2,3,4,5,6,7,8,10", shownIDs())
+check("nothing needed: group full, only our own listing and other activities hidden",
+  shownTexts():find("Your group is full", 1, true) and shownIDs() == "1,2,3,4,5,7,8,10", shownIDs())
 listed = nil
 fire("LFG_LIST_ACTIVE_ENTRY_UPDATE")
 check("delisting goes back to looking for a group", buttonText("Tank 1") ~= nil and visible(rowFor(5).open),
@@ -423,7 +448,7 @@ fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 
 ns.db.template.HEALER = 2
 ns.Changed()
-check("template change re-filters", shownIDs() == "1,2,3,5,6", shownIDs())
+check("template change re-filters", shownIDs() == "1,2,3,5", shownIDs())
 
 local ok, out = slash("OPENSPOT", "debug")
 check("/openspot debug runs", ok, out)

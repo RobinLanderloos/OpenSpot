@@ -61,6 +61,16 @@ function Search.Members(resultID, count)
   return out
 end
 
+-- Activity ID -> name, for the IDs given.
+function Search.ActivityNames(ids)
+  local names = {}
+  for _, id in ipairs(ids) do
+    local ok, info = pcall(C.GetActivityInfoTable, id)
+    if ok and type(info) == "table" then names[id] = info.fullName or info.shortName end
+  end
+  return names
+end
+
 -- The current results as rows (see Core/Rows), unsorted and unfiltered.
 function Search.Rows()
   local ok, _, ids = pcall(C.GetSearchResults)
@@ -75,6 +85,8 @@ function Search.Rows()
       rows[#rows + 1] = {
         id = id,
         activity = activity and (activity.fullName or activity.shortName) or "?",
+        activityIDs = ns.Listing.ActivityIDs(info),
+        activityNames = Search.ActivityNames(ns.Listing.ActivityIDs(info)),
         leader = info.leaderName,
         age = tonumber(info.age) or 0,
         comment = info.comment,

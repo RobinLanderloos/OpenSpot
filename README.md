@@ -17,6 +17,12 @@ A group finder for WoW Forever that shows only the groups with an open spot for 
 
 Design decisions: `docs/adr/`. Requirements: `docs/prd/openspot.md`.
 
+## Screenshots
+
+![Dungeon listings with their open spots, Whisper and Invite buttons (player names blurred)](.previews/listings-all.png)
+
+![The same listings filtered to groups that need DPS (player names blurred)](.previews/listings-dps.png)
+
 ## Development
 
     luajit tests/run.lua         # unit tests (Core)

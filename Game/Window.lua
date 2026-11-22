@@ -83,7 +83,7 @@ end
 
 -- ---------------------------------------------------------------- helpers
 local function button(parent, text, width, height)
-  local b = ns.Skin.Button(CreateFrame("Button", nil, parent))
+  local b = ns.Skin.Button(ns.Skin.Create("Button", nil, parent, ns.Skin.TEMPLATES.Button))
   b:SetSize(width, height or 22)
   b:SetText(text)
   return b
@@ -308,7 +308,7 @@ local function updateActivities()
   for i, a in ipairs(list) do
     local check = activityChecks[i]
     if not check then
-      check = ns.Skin.Check(CreateFrame("CheckButton", nil, frame.activityContent))
+      check = ns.Skin.Check(ns.Skin.Create("CheckButton", nil, frame.activityContent, ns.Skin.TEMPLATES.Check))
       check:SetSize(22, 22)
       check:SetPoint("TOPLEFT", frame.activityContent, "TOPLEFT", 0, -(i - 1) * 22)
       check.label = check:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
@@ -407,7 +407,7 @@ end
 
 -- ----------------------------------------------------------------- build
 local function build()
-  frame = ns.Skin.Window(CreateFrame("Frame", "OpenSpotWindow", UIParent))
+  frame = ns.Skin.Window(ns.Skin.Create("Frame", "OpenSpotWindow", UIParent, ns.Skin.TEMPLATES.Window))
   frame:SetSize(WIDTH, HEIGHT)
   frame:SetFrameStrata("HIGH")
   frame:SetToplevel(true)
@@ -443,7 +443,7 @@ local function build()
   end
 
   -- Left: suited-only toggle, activity checklist, Search.
-  frame.suited = ns.Skin.Check(CreateFrame("CheckButton", nil, frame))
+  frame.suited = ns.Skin.Check(ns.Skin.Create("CheckButton", nil, frame, ns.Skin.TEMPLATES.Check))
   frame.suited:SetSize(22, 22)
   frame.suited:SetPoint("TOPLEFT", frame, "TOPLEFT", 12, -58)
   frame.suitedLabel = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")

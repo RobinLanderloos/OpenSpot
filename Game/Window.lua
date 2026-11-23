@@ -56,6 +56,7 @@ end
 -- role-only icons were tried and dropped). The badge uses the plain role
 -- icons as the retail UI cuts them (67px cells on a 256px texture); the
 -- client's own GetTexCoordsForRole wins. No role: no badge, greyed icon.
+-- The member's level sits on the icon's top-left corner.
 local ROLE_TEXTURE = "Interface\\LFGFrame\\UI-LFG-ICON-ROLES"
 local ROLE_GRID = { TANK = { 1, 2 }, HEALER = { 2, 1 }, DAMAGER = { 2, 2 } }
 local CLASS_TEXTURE = "Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES"
@@ -156,10 +157,14 @@ local function updateRows()
           end
           badge.role = l and m.role or nil
           icon:Show()
+          local lvl = row.levels[k]
+          lvl:SetText(tonumber(m.level) and tostring(m.level) or "")
+          lvl:Show()
         else
           badge.role = nil
           icon:Hide()
           badge:Hide()
+          row.levels[k]:Hide()
         end
       end
       row.count:SetText(("%d/%d"):format(data.listing.numMembers, data.listing.maxMembers))
@@ -254,7 +259,7 @@ local function buildRow(parent, i)
   row.leader:ClearAllPoints()
   row.leader:SetPoint("LEFT", row, "LEFT", COL.leader[1], 8)
   -- Per member: a class icon with a role badge on its bottom-right corner.
-  row.classes, row.badges = {}, {}
+  row.classes, row.badges, row.levels = {}, {}, {}
   for k = 1, 5 do
     local icon = row:CreateTexture(nil, "ARTWORK")
     icon:SetSize(MEMBER_SIZE, MEMBER_SIZE)
@@ -265,6 +270,12 @@ local function buildRow(parent, i)
     badge:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 3, -3)
     badge:Hide()
     row.badges[k] = badge
+    -- The member's level, readable at a glance on the icon's top-left
+    -- (the role badge has the bottom-right corner).
+    local lvl = row:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+    lvl:SetPoint("TOPLEFT", icon, "TOPLEFT", -2, 3)
+    lvl:SetTextColor(1, 1, 1)
+    row.levels[k] = lvl
   end
   row.count = text(COL.count[1], COL.count[2])
   row.open = text(COL.open[1], COL.open[2])

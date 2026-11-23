@@ -397,6 +397,9 @@ slash("OPENSPOT", "")
 fire("LFG_LIST_SEARCH_RESULTS_RECEIVED")
 check("a DPS member: class icon with a DPS badge", rowFor(5) and visible(rowFor(5).classes[1])
   and visible(rowFor(5).badges[1]) and rawget(rowFor(5).badges[1], "role") == "DAMAGER")
+check("a member's level shows on their icon", rowFor(5) and visible(rowFor(5).levels[1])
+  and rowFor(5).levels[1]:GetText() == "20")
+check("empty member slots show no level", rowFor(5) and not visible(rowFor(5).levels[2]))
 check("empty member slots are hidden", rowFor(5) and not visible(rowFor(5).classes[2]) and not visible(rowFor(5).badges[2]))
 
 -- Recruiting (issues 016-019, docs/adr/0006): tank + healer, listed for

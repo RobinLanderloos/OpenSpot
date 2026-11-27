@@ -27,3 +27,29 @@ test("recruit summary with nothing needed says the group is full", function()
   local want = { mode = "recruit", free = 0, needs = { TANK = 0, HEALER = 0, DAMAGER = 0 } }
   eq(Summary.Text(22, 22, want), "Your group is full")
 end)
+
+test("explain: solo, nothing ticked shows everything", function()
+  eq(Summary.Explain(solo(false, false, false)),
+    "Solo: showing every group. Click a role to show only groups with an open spot for it.")
+end)
+
+test("explain: solo ticks are any of them", function()
+  eq(Summary.Explain(solo(true, false, false)), "Solo: groups with an open Tank spot. Click a role to add or remove it.")
+  eq(Summary.Explain(solo(true, true, true)), "Solo: groups with an open Tank, Healer or DPS spot. Click a role to add or remove it.")
+end)
+
+test("explain: an unlisted party needs room for everyone", function()
+  local want = { mode = "party", size = 3, counts = { TANK = 1, HEALER = 0, DAMAGER = 2 } }
+  eq(Summary.Explain(want),
+    "Party of 3, joining: groups with room for all 3 and 1 Tank and 2 DPS spots open. Left-click +1, right-click -1.")
+  want.counts = { TANK = 0, HEALER = 0, DAMAGER = 0 }
+  eq(Summary.Explain(want), "Party of 3, joining: groups with room for all 3. Left-click a role to require its spots.")
+end)
+
+test("explain: a listed party recruits what it misses", function()
+  local want = { mode = "recruit", free = 3, needs = { TANK = 0, HEALER = 1, DAMAGER = 2 } }
+  eq(Summary.Explain(want),
+    "Your party is listed, so recruiting: players to fill 1 Healer and 2 DPS. Left-click +1, right-click -1. Delist to join a group instead.")
+  want.needs, want.free = { TANK = 0, HEALER = 0, DAMAGER = 0 }, 0
+  eq(Summary.Explain(want), "Your party is listed and full: nothing to recruit. Delist to join a group instead.")
+end)

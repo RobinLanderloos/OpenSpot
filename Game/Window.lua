@@ -355,6 +355,7 @@ local function updateRoleButtons()
   if not frame then return end
   local want = ns.CurrentWant()
   frame.filterLabel:SetText(want.mode == "recruit" and L.NEED_LABEL or L.FILTER_LABEL)
+  frame.explain:SetText(ns.Summary.Explain(want))
   for _, role in ipairs(Fit.ROLES) do
     local b = roleButtons[role]
     local on
@@ -518,6 +519,13 @@ local function build()
   end
   frame.counter = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
   frame.counter:SetPoint("LEFT", prev, "RIGHT", 10, 0)
+  -- What the buttons look for now, in words (they work differently solo,
+  -- in a party and when the party is listed).
+  frame.explain = frame:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+  frame.explain:SetPoint("TOPLEFT", frame, "TOPLEFT", right, -78)
+  frame.explain:SetPoint("RIGHT", frame, "RIGHT", -14, 0)
+  frame.explain:SetJustifyH("LEFT")
+  if frame.explain.SetWordWrap then frame.explain:SetWordWrap(false) end
 
   -- Column headers (click to sort).
   local list = CreateFrame("Frame", nil, frame)

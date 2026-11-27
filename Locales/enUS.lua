@@ -48,5 +48,13 @@ ns.L = {
   INVITE_GROUP_TIP = "Already a group: whisper to arrange.",
   NEED_LABEL = "Looking for:",
   TIP_RECRUIT = "Your party is listed, so OpenSpot looks for players who fill what you still need. Left-click adds one, right-click removes one.",
+  AND = "and",
+  OR = "or",
+  EXPLAIN_SOLO_ALL = "Solo: showing every group. Click a role to show only groups with an open spot for it.",
+  EXPLAIN_SOLO = "Solo: groups with an open %s spot. Click a role to add or remove it.",
+  EXPLAIN_PARTY = "Party of %d, joining: groups with room for all %d and %s spots open. Left-click +1, right-click -1.",
+  EXPLAIN_PARTY_ANY = "Party of %d, joining: groups with room for all %d. Left-click a role to require its spots.",
+  EXPLAIN_RECRUIT = "Your party is listed, so recruiting: players to fill %s. Left-click +1, right-click -1. Delist to join a group instead.",
+  EXPLAIN_RECRUIT_FULL = "Your party is listed and full: nothing to recruit. Delist to join a group instead.",
   HELP = "/openspot: open the window, /openspot settings, /openspot debug: write a report",
 }

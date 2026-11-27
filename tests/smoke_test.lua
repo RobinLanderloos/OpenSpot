@@ -317,12 +317,14 @@ check("counter shows", shownTexts():find("Showing 4 of 6 listings (DPS)", 1, tru
 click(buttonText("Tank"))
 check("Tank + DPS", shownIDs() == "1,2,3,5,6", shownIDs())
 check("role ticks saved per character", OpenSpotCharDB.selection.solo.TANK == true)
+check("solo: the line under the buttons says what it looks for", shownTexts():find("Solo: groups with an open Tank", 1, true) ~= nil, shownTexts())
 
 -- Party of 2: tank + dps.
 group.size, group.roles = 2, { "TANK", "DAMAGER" }
 fire("GROUP_ROSTER_UPDATE")
 check("party: needs tank and dps open plus 2 free", shownIDs() == "5,6", shownIDs())
 check("party button shows count", buttonText("Tank 1") ~= nil, shownTexts())
+check("party: the line says joining with room for all", shownTexts():find("joining: groups with room for all", 1, true) ~= nil, shownTexts())
 click(buttonText("Tank 1"), "RightButton")
 check("right-click lowers the count", shownIDs() == "1,5,6", shownIDs())
 group.size, group.roles = 1, {}
@@ -413,6 +415,7 @@ check("unlisted party still looks for groups", buttonText("Tank 1") ~= nil and s
 listed = 800
 fire("LFG_LIST_ACTIVE_ENTRY_UPDATE")
 check("listed party: buttons show needs", buttonText("DPS 3") ~= nil and buttonText("Tank 0") ~= nil, shownTexts())
+check("listed party: the line says recruiting", shownTexts():find("Your party is listed, so recruiting", 1, true) ~= nil, shownTexts())
 check("labelled Looking for", shownTexts():find("Looking for:", 1, true) ~= nil, shownTexts())
 check("listed activity ticked, other ticks kept",
   OpenSpotCharDB.activities[800] == true and OpenSpotCharDB.activities[799] == true)
